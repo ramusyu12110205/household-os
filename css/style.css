@@ -1,1 +1,11 @@
-/* 家計簿OS 共通スタイル */
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#68738a;--line:#dfe4ee;--primary:#5b45d6;--danger:#b4234d;--good:#147a52}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 30px rgba(24,34,55,.06)}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.primary{background:var(--primary);color:#fff}
+.danger{background:#fff0f3;color:var(--danger);border:1px solid #efb5c6}
+.good{color:var(--good)}
