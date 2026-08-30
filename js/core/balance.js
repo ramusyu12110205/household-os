@@ -23,6 +23,12 @@ export function calculateBalances(state){
         if(to&&accounts.has(to))accounts.get(to).balance+=n;
         break;
       }
+      case'charge':{
+        const to=t.to_account_id?String(t.to_account_id):null;
+        if(to&&accounts.has(to))accounts.get(to).balance+=n;
+        if(cardId&&cards.has(cardId))cards.get(cardId).balance+=n;
+        break;
+      }
       case'repayment':case'card_payment':
         if(accountId&&accounts.has(accountId))accounts.get(accountId).balance-=n;
         if(targetCardId&&cards.has(targetCardId))cards.get(targetCardId).balance-=n;
