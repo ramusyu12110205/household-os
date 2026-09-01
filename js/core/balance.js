@@ -26,7 +26,8 @@ export function calculateBalances(state){
       case'charge':{
         const to=t.to_account_id?String(t.to_account_id):null;
         if(to&&accounts.has(to))accounts.get(to).balance+=n;
-        if(cardId&&cards.has(cardId))cards.get(cardId).balance+=n;
+        // A charge is paid by the source card, so it increases that card's liability.
+        if(targetCardId&&cards.has(targetCardId))cards.get(targetCardId).balance+=n;
         break;
       }
       case'repayment':case'card_payment':
