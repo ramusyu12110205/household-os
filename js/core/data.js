@@ -2,19 +2,22 @@ import { supabase } from './supabase.js';
 import { HOUSEHOLD_RULEBOOK } from './householdRulebook.js';
 
 async function ensureHouseholdRulebook(userId){
-  // Excelルールブックから不足しているマスタだけを追加する。既存データは上書きしない。
   const cards=HOUSEHOLD_RULEBOOK.cards.map(([name,close,before,after,withdrawal])=>({user_id:userId,name,close_day:close,billing_month_before_close:before,billing_month_after_close:after,withdrawal_day:withdrawal,archived:false}));
   const {error:ce}=await supabase.from('household_cards').upsert(cards,{onConflict:'user_id,name',ignoreDuplicates:true}); if(ce)throw ce;
   const cardRows=await supabase.from('household_cards').select('id,name').eq('user_id',userId).eq('archived',false); if(cardRows.error)throw cardRows.error;
   const cardMap=Object.fromEntries((cardRows.data||[]).map(x=>[x.name,x.id]));
   const payments=HOUSEHOLD_RULEBOOK.payments.map(([name,type,linked])=>({user_id:userId,name,method_type:type,linked_card_id:linked?cardMap[linked]||null:null,archived:false}));
   const {error:pe}=await supabase.from('household_payment_methods').upsert(payments,{onConflict:'user_id,name',ignoreDuplicates:true}); if(pe)throw pe;
+  // 既存決済マスタもExcelのカード紐付けだけは正規化する。
+  for(const [name,,linked] of HOUSEHOLD_RULEBOOK.payments.filter(x=>x[2])){if(cardMap[linked]){const r=await supabase.from('household_payment_methods').update({method_type:name==='Au Pay'||name==='楽天Pay'?'wallet':'card',linked_card_id:cardMap[linked]}).eq('user_id',userId).eq('name',name);if(r.error)throw r.error}}
   const accounts=HOUSEHOLD_RULEBOOK.accounts.map(name=>({user_id:userId,name,account_type:['交通系（りく）','交通系（ひま）'].includes(name)?'transit':['PayPay','d払い','メルペイ','ロピア 電子マネー'].includes(name)?'wallet':name==='現金'?'cash':'bank',initial_balance:0,actual_balance:0,archived:false}));
   const {error:ae}=await supabase.from('household_accounts').upsert(accounts,{onConflict:'user_id,name',ignoreDuplicates:true}); if(ae)throw ae;
   const categories=[...new Set(HOUSEHOLD_RULEBOOK.summaries.map(x=>x[2]).filter(Boolean))].map((name,i)=>({user_id:userId,name,kind:'expense',sort_order:i,archived:false}));
   const {error:cate}=await supabase.from('household_categories').upsert(categories,{onConflict:'user_id,name',ignoreDuplicates:true}); if(cate)throw cate;
-  const summaries=HOUSEHOLD_RULEBOOK.summaries.map(([name,cashflow,category,subType,target])=>({user_id:userId,name,cashflow_type:cashflow,category_name:category||null,process_type:cashflow==='income'?'income':cashflow==='repayment'?'repayment':cashflow==='transfer'?'transfer':'normal',target_name:target||null,archived:false}));
+  const summaries=HOUSEHOLD_RULEBOOK.summaries.map(([name,cashflow,category,subType,target])=>({user_id:userId,name,cashflow_type:cashflow,category_name:category||null,process_type:cashflow==='income'?'income':cashflow==='repayment'?'repayment':cashflow==='transfer'?(subType==='引落'?'card_payment':subType==='チャージ'?'charge':'transfer'):'normal',target_name:target||null,archived:false}));
   const {error:se}=await supabase.from('household_summaries').upsert(summaries,{onConflict:'user_id,name',ignoreDuplicates:true}); if(se)throw se;
+  // 既存摘要もExcelルールへ正規化。ただし取引そのものは変更しない。
+  for(const [name,cashflow,category,subType,target] of HOUSEHOLD_RULEBOOK.summaries){const process=cashflow==='income'?'income':cashflow==='repayment'?'repayment':cashflow==='transfer'?(subType==='引落'?'card_payment':subType==='チャージ'?'charge':'transfer'):'normal';const patch={cashflow_type:cashflow,category_name:category||null,process_type:process,target_name:target||null};if(process==='charge'&&target&&cardMap[name])patch.charge_source_card_id=cardMap[name];const r=await supabase.from('household_summaries').update(patch).eq('user_id',userId).eq('name',name);if(r.error)throw r.error}}
   const now=new Date(); const ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
   const budgets=HOUSEHOLD_RULEBOOK.budgets.map(([category,amount])=>({user_id:userId,year_month:ym,category_name:category,amount}));
   const {error:be}=await supabase.from('household_budgets').upsert(budgets,{onConflict:'user_id,year_month,category_name',ignoreDuplicates:true}); if(be)throw be;
