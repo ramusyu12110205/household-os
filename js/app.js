@@ -1,6 +1,6 @@
 import { supabase } from './core/supabase.js';
 import { state,setState } from './core/state.js';
-import { loadHousehold } from './core/data.js?v=20260901-2';
+import { loadHousehold } from './core/data-fresh.js';
 import { $ } from './core/utils.js';
 import { renderLogin } from './features/auth.js';
 import { renderHome } from './features/home.js';
