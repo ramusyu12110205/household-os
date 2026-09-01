@@ -19,16 +19,12 @@ function bindSettingsEdits(){
     const match=raw.match(/^window\.(editHousehold\w+)\((.*)\)$/s);
     if(!match)return;
     let record;
-    try{record=JSON.parse(match[2]);}catch(e){return;}
+    try{record=JSON.parse(match[2].replace(/"\s*$/,''));}catch(e){return;}
     btn.removeAttribute('onclick');
     btn.addEventListener('click',e=>{
       e.preventDefault();e.stopPropagation();
       const fn=window[match[1]];
-      if(typeof fn==='function'){
-        const oldScroll=window.scrollTo;
-        window.scrollTo=()=>{};
-        try{fn(record);}finally{window.scrollTo=oldScroll;}
-      }
+      if(typeof fn==='function')fn(record);
     });
   });
 }
