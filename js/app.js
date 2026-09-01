@@ -17,7 +17,7 @@ function bindSettingsEditCapture(){
   if(settingsEditCaptureBound)return;
   settingsEditCaptureBound=true;
   document.addEventListener('click',(e)=>{
-    if(!document.querySelector('[data-page="settings"]'))return;
+    if(!document.querySelector('.nav button[data-page="settings"]'))return;
     const btn=e.target.closest('.list-item button');
     if(!btn||btn.textContent.trim()!=='編集')return;
     const item=btn.closest('.list-item');
