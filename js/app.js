@@ -4,12 +4,12 @@ import { loadHousehold } from './core/data-fresh.js';
 import { $ } from './core/utils.js';
 import { renderLogin } from './features/auth.js';
 import { renderHome } from './features/home.js';
-import { renderInput,bindInput } from './features/transactions/input.js?v=20260907e';
+import { renderInput,bindInput } from './features/transactions/input.js?v=20260907f';
 import { renderHistory,bindHistory } from './features/transactions/history.js?v=20260907b';
 import { renderMonthly,bindMonthly } from './features/budgets/monthly.js';
 import { renderCards } from './features/credit/cards.js';
 import { renderAssets,bindAssets } from './features/assets/assets-v2.js?v=20260907c';
-import { renderSettings,bindSettings } from './features/settings/settings.js?v=20260907b';
+import { renderSettings,bindSettings } from './features/settings/settings.js?v=20260907c';
 const pages={home:renderHome,input:renderInput,history:renderHistory,monthly:renderMonthly,cards:renderCards,assets:renderAssets,settings:renderSettings};
 export async function refresh(page='home'){setState(await loadHousehold(state.user.id));window.__household_state=state;render(page)}
 export function render(page='home'){window.__household_state=state;const fn=pages[page]||pages.home;$("app").innerHTML=fn(state);bind(page)}
