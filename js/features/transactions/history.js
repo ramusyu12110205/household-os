@@ -33,7 +33,11 @@ async function editTx(t,render){
   const amount=Number(amountText),points=Number(pointsText);
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!date||amountText.trim()===''||!Number.isFinite(amount)||amount<=0||!Number.isFinite(points)||points<0||points>amount||!description.trim())return alert('取引日・内容・金額・ポイントを確認してください。');
   const update={description:description.trim(),transaction_date:date,amount,points_used:points,effect_amount:Math.max(0,amount-points)};
-  if(t.billing_card_id&&['normal','charge'].includes(t.process_type))update.billing_year_month=billingMonth(date,{id:t.billing_card_id,close_day:undefined,billing_month_before_close:1,billing_month_after_close:2});
+  const state=window.__household_state;
+  if(t.billing_card_id&&['normal','charge'].includes(t.process_type)){
+    const card=state?.cards?.find(c=>String(c.id)===String(t.billing_card_id));
+    if(card)update.billing_year_month=billingMonth(date,card);
+  }
   const{error}=await supabase.from('household_transactions').update(update).eq('id',t.id);
   if(error)return alert('更新失敗：'+error.message);
   Object.assign(t,update);
