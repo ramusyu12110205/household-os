@@ -15,11 +15,17 @@ function isBankHoliday(d){
   const vernal=Math.floor(20.8431+0.242194*(y-1980)-Math.floor((y-1980)/4));
   const autumnal=Math.floor(23.2488+0.242194*(y-1980)-Math.floor((y-1980)/4));
   if((m===3&&day===vernal)||(m===9&&day===autumnal))return true;
-  return d.getDay()===0;
+  return false;
 }
 function nextBusinessDay(date){const d=new Date(date);while(d.getDay()===0||d.getDay()===6||isBankHoliday(d))d.setDate(d.getDate()+1);return d}
-function nextDateOnOrAfter(day,from){const d=new Date(from);d.setHours(0,0,0,0);d.setDate(day);if(d<from){d.setMonth(d.getMonth()+1);d.setDate(day)}return d}
 function nextSalaryDate(from){const d=new Date(from);d.setHours(0,0,0,0);if(d.getDate()>10){d.setMonth(d.getMonth()+1);d.setDate(10)}else d.setDate(10);return d}
+function billingWithdrawalDate(billingMonth,card){
+  if(!billingMonth||!card)return null;
+  const [y,m]=String(billingMonth).slice(0,7).split('-').map(Number);
+  if(!y||!m)return null;
+  const day=Math.min(Number(card.withdrawal_day||26),new Date(y,m,0).getDate());
+  return nextBusinessDay(new Date(y,m-1,day));
+}
 
 export function renderHome(s){
   const m=toMonth(s.settings?.target_year_month)||currentMonth();
@@ -34,14 +40,19 @@ export function renderHome(s){
   const salary=nextSalaryDate(now);
   const windowEnd=new Date(salary);windowEnd.setHours(23,59,59,999);
   const payments=[];
-  b.cards.forEach(card=>{
-    const balance=Math.max(0,Number(card.balance||0));if(!balance)return;
-    const scheduled=nextBusinessDay(nextDateOnOrAfter(Number(card.withdrawal_day||26),now));
-    if(scheduled>=now&&scheduled<=windowEnd)payments.push({date:scheduled,name:card.name,amount:balance,type:'カード引落'});
-  });
-  s.transactions.filter(t=>t.process_type==='repayment').forEach(t=>{
-    const d=new Date(`${t.transaction_date}T00:00:00`),amount=actualAmount(t.amount,t.points_used);
-    if(d>=now&&d<=windowEnd&&amount>0)payments.push({date:d,name:t.description,amount,type:'借入返済'});
+  s.cards.forEach(card=>{
+    const groups=new Map();
+    s.transactions.forEach(t=>{
+      if(String(t.billing_card_id)!==String(card.id)||!t.billing_year_month||t.process_type==='card_payment')return;
+      const amount=actualAmount(t.amount,t.points_used);
+      if(amount<=0)return;
+      const key=String(t.billing_year_month).slice(0,7);
+      groups.set(key,(groups.get(key)||0)+amount);
+    });
+    groups.forEach((amount,billingMonth)=>{
+      const scheduled=billingWithdrawalDate(billingMonth,card);
+      if(scheduled&&scheduled>=now&&scheduled<=windowEnd)payments.push({date:scheduled,name:card.name,amount,type:'カード引落',billingMonth});
+    });
   });
   payments.sort((a,b)=>a.date-b.date||b.amount-a.amount);
   const plannedTotal=payments.reduce((a,x)=>a+x.amount,0);
@@ -52,7 +63,7 @@ export function renderHome(s){
       <div class="stat" style="margin-top:10px"><span class="stat-label">家計収支（収入・借入−実支出）</span><span class="stat-value">${yen(income-expense)}</span></div>
       <div class="muted small" style="margin-top:8px">資産移動・返済は家計収支には含めません</div>
     </section>
-    <section class="card"><h3>📅 次回支払い予定</h3><p class="muted small">次の給料日（10日）までに出ていく予定額です。土日祝に当たる引落しは翌営業日に繰り越します。</p>${payments.map(x=>`<div class="list-item"><div class="between"><div><b>${esc(x.name)}</b><div class="muted small">${dateText(x.date)} ・ ${esc(x.type)}</div></div><b>${yen(x.amount)}</b></div></div>`).join('')||'<p class="muted">次の10日までの支払い予定はありません。</p>'}<div class="stat" style="margin-top:10px"><span class="stat-label">予定支出合計</span><span class="stat-value">${yen(plannedTotal)}</span></div></section>
+    <section class="card"><h3>📅 次回支払い予定</h3><p class="muted small">次の給料日（10日）までに出ていくカード引落予定額です。土日祝に当たる引落しは翌営業日に繰り越します。</p>${payments.map(x=>`<div class="list-item"><div class="between"><div><b>${esc(x.name)}</b><div class="muted small">${dateText(x.date)} ・ ${esc(x.type)}</div></div><b>${yen(x.amount)}</b></div></div>`).join('')||'<p class="muted">次の10日までのカード引落予定はありません。</p>'}<div class="stat" style="margin-top:10px"><span class="stat-label">予定支出合計</span><span class="stat-value">${yen(plannedTotal)}</span></div></section>
     <section class="card"><div class="between"><h3>現在の資産・負債</h3><button class="light" data-page="assets">詳細</button></div>
       <div class="stats"><div class="stat"><span class="stat-label">資産</span><span class="stat-value">${yen(assets)}</span></div><div class="stat"><span class="stat-label">カード負債</span><span class="stat-value">${yen(debt)}</span></div><div class="stat"><span class="stat-label">純資産</span><span class="stat-value">${yen(assets-debt)}</span></div></div>
     </section>
