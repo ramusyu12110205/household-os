@@ -4,7 +4,7 @@ import { loadHousehold } from './core/data-fresh.js';
 import { $ } from './core/utils.js';
 import { renderLogin } from './features/auth.js';
 import { renderHome } from './features/home.js';
-import { renderInput,bindInput } from './features/transactions/input.js?v=20260907d';
+import { renderInput,bindInput } from './features/transactions/input.js?v=20260907e';
 import { renderHistory,bindHistory } from './features/transactions/history.js?v=20260907b';
 import { renderMonthly,bindMonthly } from './features/budgets/monthly.js';
 import { renderCards } from './features/credit/cards.js';
