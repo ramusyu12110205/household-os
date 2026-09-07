@@ -6,32 +6,20 @@ import { calculateBalances } from '../core/balance.js';
 function pad(n){return String(n).padStart(2,'0')}
 function dateText(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
 function isBankHoliday(d){
-  const y=d.getFullYear(),m=d.getMonth()+1,day=d.getDate(),w=d.getDay();
+  const y=d.getFullYear(),m=d.getMonth()+1,day=d.getDate();
   if((m===1&&day<=3)||(m===12&&day>=31))return true;
   const fixed=[`1-1`,`2-11`,`2-23`,`4-29`,`5-3`,`5-4`,`5-5`,`11-3`,`11-23`];
   if(fixed.includes(`${m}-${day}`))return true;
   const nth=(month,weekday,n)=>{if(m!==month)return false;const first=new Date(y,month-1,1).getDay();return day===1+((weekday-first+7)%7)+7*(n-1)};
   if(nth(1,1,2)||nth(7,1,3)||nth(9,1,3)||nth(10,1,2))return true;
-  if(m===3&&day===Math.floor(20.8431+0.242194*(y-1980)-Math.floor((y-1980)/4)))return true;
-  if(m===9&&day===Math.floor(23.2488+0.242194*(y-1980)-Math.floor((y-1980)/4)))return true;
-  return w===0;
+  const vernal=Math.floor(20.8431+0.242194*(y-1980)-Math.floor((y-1980)/4));
+  const autumnal=Math.floor(23.2488+0.242194*(y-1980)-Math.floor((y-1980)/4));
+  if((m===3&&day===vernal)||(m===9&&day===autumnal))return true;
+  return d.getDay()===0;
 }
-function nextBusinessDay(date){
-  const d=new Date(date);
-  while(d.getDay()===0||d.getDay()===6||isBankHoliday(d))d.setDate(d.getDate()+1);
-  return d;
-}
-function nextDateOnOrAfter(day,from){
-  const d=new Date(from);d.setHours(0,0,0,0);
-  d.setDate(day>=d.getDate()?day:1);
-  if(day<from.getDate())d.setMonth(d.getMonth()+1);
-  return d;
-}
-function nextSalaryDate(from){
-  const d=new Date(from);d.setHours(0,0,0,0);
-  if(d.getDate()<=10)d.setDate(10);else{d.setMonth(d.getMonth()+1);d.setDate(10)}
-  return d;
-}
+function nextBusinessDay(date){const d=new Date(date);while(d.getDay()===0||d.getDay()===6||isBankHoliday(d))d.setDate(d.getDate()+1);return d}
+function nextDateOnOrAfter(day,from){const d=new Date(from);d.setHours(0,0,0,0);d.setDate(day);if(d<from){d.setMonth(d.getMonth()+1);d.setDate(day)}return d}
+function nextSalaryDate(from){const d=new Date(from);d.setHours(0,0,0,0);if(d.getDate()>10){d.setMonth(d.getMonth()+1);d.setDate(10)}else d.setDate(10);return d}
 
 export function renderHome(s){
   const m=toMonth(s.settings?.target_year_month)||currentMonth();
@@ -44,7 +32,7 @@ export function renderHome(s){
   const debt=b.cards.reduce((a,x)=>a+Math.max(0,Number(x.balance||0)),0);
   const now=new Date(today()+'T00:00:00');
   const salary=nextSalaryDate(now);
-  const windowEnd=new Date(salary);windowEnd.setDate(10);
+  const windowEnd=new Date(salary);windowEnd.setHours(23,59,59,999);
   const payments=[];
   b.cards.forEach(card=>{
     const balance=Math.max(0,Number(card.balance||0));if(!balance)return;
