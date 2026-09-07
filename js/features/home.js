@@ -5,6 +5,7 @@ import { calculateBalances } from '../core/balance.js';
 
 function pad(n){return String(n).padStart(2,'0')}
 function dateText(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function cycleText(start,end){const last=new Date(end);last.setDate(last.getDate()-1);return `${dateText(start)} ～ ${dateText(last)}`}
 function isBankHoliday(d){
   const y=d.getFullYear(),m=d.getMonth()+1,day=d.getDate();
   if((m===1&&day<=3)||(m===12&&day>=31))return true;
@@ -25,6 +26,7 @@ function salaryCycle(from){
   const end=new Date(start.getFullYear(),start.getMonth()+1,10);
   return {start,end};
 }
+function shiftCycle(cycle,months){const start=new Date(cycle.start);start.setMonth(start.getMonth()+months);const end=new Date(start);end.setMonth(end.getMonth()+1);return {start,end}}
 function billingWithdrawalDate(billingMonth,card){
   if(!billingMonth||!card)return null;
   const [y,m]=String(billingMonth).slice(0,7).split('-').map(Number);
@@ -42,7 +44,8 @@ export function renderHome(s){
   const b=calculateBalances(s);
   const assets=b.accounts.reduce((a,x)=>a+Number(x.balance||0),0);
   const debt=b.cards.reduce((a,x)=>a+Math.max(0,Number(x.balance||0)),0);
-  const {start:cycleStart,end:cycleEnd}=salaryCycle(new Date(today()+'T00:00:00'));
+  const baseCycle=salaryCycle(new Date(today()+'T00:00:00'));
+  const cycles=[0,1,2].map(i=>shiftCycle(baseCycle,i));
   const payments=[];
   s.cards.forEach(card=>{
     const groups=new Map();
@@ -55,11 +58,12 @@ export function renderHome(s){
     });
     groups.forEach((amount,billingMonth)=>{
       const scheduled=billingWithdrawalDate(billingMonth,card);
-      if(scheduled&&scheduled>=cycleStart&&scheduled<cycleEnd)payments.push({date:scheduled,name:card.name,amount,type:'カード引落',billingMonth});
+      if(!scheduled)return;
+      const cycleIndex=cycles.findIndex(c=>scheduled>=c.start&&scheduled<c.end);
+      if(cycleIndex>=0)payments.push({date:scheduled,name:card.name,amount,type:'カード引落',billingMonth,cycleIndex});
     });
   });
   payments.sort((a,b)=>a.date-b.date||b.amount-a.amount);
-  const plannedTotal=payments.reduce((a,x)=>a+x.amount,0);
   const recent=[...rows].sort((a,b)=>String(b.transaction_date).localeCompare(String(a.transaction_date))||String(b.created_at||'').localeCompare(String(a.created_at||''))).slice(0,8);
   return layout('💰 家計簿OS','home',`
     <section class="card"><div class="between"><div><div class="muted small">対象年月</div><h2>${esc(m)}</h2></div><button class="primary" data-page="input">＋ 記録</button></div>
@@ -67,7 +71,7 @@ export function renderHome(s){
       <div class="stat" style="margin-top:10px"><span class="stat-label">家計収支（収入・借入−実支出）</span><span class="stat-value">${yen(income-expense)}</span></div>
       <div class="muted small" style="margin-top:8px">資産移動・返済は家計収支には含めません</div>
     </section>
-    <section class="card"><h3>📅 次回支払い予定</h3><p class="muted small">直近の給料日（10日）から次の給料日の前日までに出ていくカード引落予定額です。土日祝に当たる引落しは翌営業日に繰り越します。</p>${payments.map(x=>`<div class="list-item"><div class="between"><div><b>${esc(x.name)}</b><div class="muted small">${dateText(x.date)} ・ ${esc(x.type)}</div></div><b>${yen(x.amount)}</b></div></div>`).join('')||'<p class="muted">この給与サイクルのカード引落予定はありません。</p>'}<div class="stat" style="margin-top:10px"><span class="stat-label">予定支出合計</span><span class="stat-value">${yen(plannedTotal)}</span></div></section>
+    <section class="card"><h3>📅 支払い予定</h3><p class="muted small">給料日（10日）を基準に、現在の給与サイクルから3サイクル先までのカード引落予定を表示します。土日祝に当たる引落しは翌営業日に繰り越します。</p>${cycles.map((cycle,i)=>{const items=payments.filter(x=>x.cycleIndex===i);const total=items.reduce((a,x)=>a+x.amount,0);return `<div style="margin-top:${i===0?10:18}px"><div class="between"><b>${i===0?'今期':i===1?'翌期':'翌々期'}</b><span class="muted small">${cycleText(cycle.start,cycle.end)}</span></div>${items.map(x=>`<div class="list-item"><div class="between"><div><b>${esc(x.name)}</b><div class="muted small">${dateText(x.date)} ・ ${esc(x.type)}</div></div><b>${yen(x.amount)}</b></div></div>`).join('')||'<p class="muted small">カード引落予定はありません。</p>'}<div class="stat" style="margin-top:8px"><span class="stat-label">予定支出合計</span><span class="stat-value">${yen(total)}</span></div></div>`}).join('')}</section>
     <section class="card"><div class="between"><h3>現在の資産・負債</h3><button class="light" data-page="assets">詳細</button></div>
       <div class="stats"><div class="stat"><span class="stat-label">資産</span><span class="stat-value">${yen(assets)}</span></div><div class="stat"><span class="stat-label">カード負債</span><span class="stat-value">${yen(debt)}</span></div><div class="stat"><span class="stat-label">純資産</span><span class="stat-value">${yen(assets-debt)}</span></div></div>
     </section>
