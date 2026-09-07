@@ -3,7 +3,7 @@ import { state,setState } from './core/state.js';
 import { loadHousehold } from './core/data-fresh.js';
 import { $ } from './core/utils.js';
 import { renderLogin } from './features/auth.js';
-import { renderHome } from './features/home.js?v=20260907a';
+import { renderHome } from './features/home.js?v=20260907b';
 import { renderInput,bindInput } from './features/transactions/input.js?v=20260907f';
 import { renderHistory,bindHistory } from './features/transactions/history.js?v=20260907b';
 import { renderMonthly,bindMonthly } from './features/budgets/monthly.js';
