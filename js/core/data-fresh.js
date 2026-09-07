@@ -1,6 +1,8 @@
 import { supabase } from './supabase.js';
 import { HOUSEHOLD_RULEBOOK } from './householdRulebook.js';
 
+let rulebookReadyUserId = null;
+
 function processType(cashflow, subType) {
   if (cashflow === 'income') return subType === '借入' ? 'borrowing' : 'income';
   if (cashflow === 'repayment') return 'repayment';
@@ -13,6 +15,8 @@ function processType(cashflow, subType) {
 }
 
 async function ensureHouseholdRulebook(userId) {
+  if (rulebookReadyUserId === userId) return;
+
   const cards = HOUSEHOLD_RULEBOOK.cards.map(([name, close, before, after, withdrawal]) => ({
     user_id: userId,
     name,
@@ -152,6 +156,8 @@ async function ensureHouseholdRulebook(userId) {
     .from('household_budgets')
     .upsert(budgets, { onConflict: 'user_id,year_month,category_name', ignoreDuplicates: true });
   if (be) throw be;
+
+  rulebookReadyUserId = userId;
 }
 
 export async function loadHousehold(userId) {
