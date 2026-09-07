@@ -18,8 +18,13 @@ function isBankHoliday(d){
   return false;
 }
 function nextBusinessDay(date){const d=new Date(date);while(d.getDay()===0||d.getDay()===6||isBankHoliday(d))d.setDate(d.getDate()+1);return d}
-function nextSalaryDate(from){const d=new Date(from);d.setHours(0,0,0,0);if(d.getDate()>10){d.setMonth(d.getMonth()+1);d.setDate(10)}else d.setDate(10);return d}
-function nextSalaryAfter(date){const d=new Date(date);d.setHours(0,0,0,0);d.setMonth(d.getMonth()+1);d.setDate(10);return d}
+function salaryCycle(from){
+  const d=new Date(from);d.setHours(0,0,0,0);
+  const start=new Date(d.getFullYear(),d.getMonth(),10);
+  if(d<start)start.setMonth(start.getMonth()-1);
+  const end=new Date(start.getFullYear(),start.getMonth()+1,10);
+  return {start,end};
+}
 function billingWithdrawalDate(billingMonth,card){
   if(!billingMonth||!card)return null;
   const [y,m]=String(billingMonth).slice(0,7).split('-').map(Number);
@@ -37,10 +42,7 @@ export function renderHome(s){
   const b=calculateBalances(s);
   const assets=b.accounts.reduce((a,x)=>a+Number(x.balance||0),0);
   const debt=b.cards.reduce((a,x)=>a+Math.max(0,Number(x.balance||0)),0);
-  const now=new Date(today()+'T00:00:00');
-  const cycleStart=nextSalaryDate(now);
-  const cycleEnd=nextSalaryAfter(cycleStart);
-  cycleEnd.setHours(23,59,59,999);
+  const {start:cycleStart,end:cycleEnd}=salaryCycle(new Date(today()+'T00:00:00'));
   const payments=[];
   s.cards.forEach(card=>{
     const groups=new Map();
@@ -53,7 +55,7 @@ export function renderHome(s){
     });
     groups.forEach((amount,billingMonth)=>{
       const scheduled=billingWithdrawalDate(billingMonth,card);
-      if(scheduled&&scheduled>=cycleStart&&scheduled<=cycleEnd)payments.push({date:scheduled,name:card.name,amount,type:'カード引落',billingMonth});
+      if(scheduled&&scheduled>=cycleStart&&scheduled<cycleEnd)payments.push({date:scheduled,name:card.name,amount,type:'カード引落',billingMonth});
     });
   });
   payments.sort((a,b)=>a.date-b.date||b.amount-a.amount);
@@ -65,7 +67,7 @@ export function renderHome(s){
       <div class="stat" style="margin-top:10px"><span class="stat-label">家計収支（収入・借入−実支出）</span><span class="stat-value">${yen(income-expense)}</span></div>
       <div class="muted small" style="margin-top:8px">資産移動・返済は家計収支には含めません</div>
     </section>
-    <section class="card"><h3>📅 次回支払い予定</h3><p class="muted small">次の給料日（10日）から次の給料日（10日）までに出ていくカード引落予定額です。土日祝に当たる引落しは翌営業日に繰り越します。</p>${payments.map(x=>`<div class="list-item"><div class="between"><div><b>${esc(x.name)}</b><div class="muted small">${dateText(x.date)} ・ ${esc(x.type)}</div></div><b>${yen(x.amount)}</b></div></div>`).join('')||'<p class="muted">次の給料日までのカード引落予定はありません。</p>'}<div class="stat" style="margin-top:10px"><span class="stat-label">予定支出合計</span><span class="stat-value">${yen(plannedTotal)}</span></div></section>
+    <section class="card"><h3>📅 次回支払い予定</h3><p class="muted small">直近の給料日（10日）から次の給料日の前日までに出ていくカード引落予定額です。土日祝に当たる引落しは翌営業日に繰り越します。</p>${payments.map(x=>`<div class="list-item"><div class="between"><div><b>${esc(x.name)}</b><div class="muted small">${dateText(x.date)} ・ ${esc(x.type)}</div></div><b>${yen(x.amount)}</b></div></div>`).join('')||'<p class="muted">この給与サイクルのカード引落予定はありません。</p>'}<div class="stat" style="margin-top:10px"><span class="stat-label">予定支出合計</span><span class="stat-value">${yen(plannedTotal)}</span></div></section>
     <section class="card"><div class="between"><h3>現在の資産・負債</h3><button class="light" data-page="assets">詳細</button></div>
       <div class="stats"><div class="stat"><span class="stat-label">資産</span><span class="stat-value">${yen(assets)}</span></div><div class="stat"><span class="stat-label">カード負債</span><span class="stat-value">${yen(debt)}</span></div><div class="stat"><span class="stat-label">純資産</span><span class="stat-value">${yen(assets-debt)}</span></div></div>
     </section>
