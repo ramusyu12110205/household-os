@@ -8,8 +8,8 @@ import { renderInput,bindInput } from './features/transactions/input.js?v=202609
 import { renderHistory,bindHistory } from './features/transactions/history.js?v=20260907b';
 import { renderMonthly,bindMonthly } from './features/budgets/monthly.js';
 import { renderCards } from './features/credit/cards.js';
-import { renderAssets,bindAssets } from './features/assets/assets.js';
-import { renderSettings,bindSettings } from './features/settings/settings.js';
+import { renderAssets,bindAssets } from './features/assets/assets.js?v=20260907b';
+import { renderSettings,bindSettings } from './features/settings/settings.js?v=20260907b';
 const pages={home:renderHome,input:renderInput,history:renderHistory,monthly:renderMonthly,cards:renderCards,assets:renderAssets,settings:renderSettings};
 export async function refresh(page='home'){setState(await loadHousehold(state.user.id));window.__household_state=state;render(page)}
 export function render(page='home'){window.__household_state=state;const fn=pages[page]||pages.home;$("app").innerHTML=fn(state);bind(page)}
