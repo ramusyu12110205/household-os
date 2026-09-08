@@ -32,7 +32,13 @@ function bindEnterToNextInput(){
     if(index<0)return;
     e.preventDefault();
     const next=fields[index+1];
-    if(next){next.focus();if(next.tagName==='INPUT'&&next.type!=='date'&&next.select)next.select();return;}
+    if(next){
+      next.focus();
+      if(next.tagName==='SELECT'&&typeof next.showPicker==='function'){
+        try{next.showPicker()}catch(_){/* native picker unavailable; keep normal focus */}
+      }else if(next.tagName==='INPUT'&&next.type!=='date'&&next.select)next.select();
+      return;
+    }
     document.getElementById('tx-save')?.click();
   });
 }
