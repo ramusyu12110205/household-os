@@ -25,12 +25,15 @@ function bindEnterToNextInput(){
   const root=document.getElementById('app');
   if(!root)return;
   root.addEventListener('keydown',e=>{
-    if(e.key!=='Enter'||!e.target.matches('input,select'))return;
+    if(e.key!=='Enter'||e.isComposing||!e.target.matches('input,select'))return;
+    const target=e.target;
     const fields=[...root.querySelectorAll('input,select')].filter(el=>!el.disabled&&el.type!=='hidden'&&el.offsetParent!==null);
-    const index=fields.indexOf(e.target);
-    if(index<0||index>=fields.length-1)return;
+    const index=fields.indexOf(target);
+    if(index<0)return;
     e.preventDefault();
-    fields[index+1].focus();
+    const next=fields[index+1];
+    if(next){next.focus();if(next.tagName==='INPUT'&&next.type!=='date'&&next.select)next.select();return;}
+    document.getElementById('tx-save')?.click();
   });
 }
 function bind(page){document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>render(b.dataset.page));document.querySelector('[data-action="logout"]')?.addEventListener('click',()=>supabase.auth.signOut());if(page==='input'){bindInput(state,()=>render('input'));bindEnterToNextInput()}if(page==='history')bindHistory(render);if(page==='monthly')bindMonthly(state,refresh);if(page==='assets')bindAssets(state,refresh);if(page==='settings'){bindSettings(state,refresh);enhanceCategoryOrder(state,refresh);enhanceMasterOrder(state,refresh)}document.dispatchEvent(new CustomEvent('household:rendered',{detail:{page}}))}
