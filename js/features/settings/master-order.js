@@ -27,14 +27,13 @@ export function enhanceMasterOrder(s, refresh) {
 
   const groups = section.querySelector('#master-order-groups');
   const lists = {};
-  TYPES.forEach((type) => {
-    lists[type.key] = sortItems(s[type.stateKey]);
-  });
+  TYPES.forEach((type) => { lists[type.key] = sortItems(s[type.stateKey]); });
 
   const render = () => {
+    const openTypes = new Set([...groups.querySelectorAll('details[open]')].map((el) => el.dataset.orderType));
     groups.innerHTML = TYPES.map((type) => {
       const items = lists[type.key];
-      return `<details class="order-parent"><summary>${type.label}<span class="order-count">${items.length}件</span></summary><div class="order-parent-body">${items.length ? items.map((item, index) => `
+      return `<details class="order-parent" data-order-type="${type.key}" ${openTypes.has(type.key) ? 'open' : ''}><summary>${type.label}<span class="order-count">${items.length}件</span></summary><div class="order-parent-body">${items.length ? items.map((item, index) => `
         <div class="master-order-row" data-master-type="${type.key}" data-master-id="${esc(item.id)}">
           <div><b>${esc(item.name)}</b><div class="muted small">${index + 1}番目</div></div>
           <div class="master-order-actions">
@@ -61,7 +60,13 @@ export function enhanceMasterOrder(s, refresh) {
       const error = results.find((result) => result.error)?.error;
       if (error) throw error;
       items.forEach((item, index) => { item.sort_order = index; });
-      await refresh('settings');
+      const stateItems = s[meta.stateKey] || [];
+      stateItems.forEach((item) => {
+        const updated = items.find((x) => String(x.id) === String(item.id));
+        if (updated) item.sort_order = updated.sort_order;
+      });
+      stateItems.sort((a, b) => Number(a.sort_order ?? 999999) - Number(b.sort_order ?? 999999) || String(a.name).localeCompare(String(b.name), 'ja'));
+      render();
     } catch (error) {
       console.error(error);
       alert('表示順を保存できませんでした。');
