@@ -2,6 +2,7 @@ import { supabase } from './supabase.js';
 import { HOUSEHOLD_RULEBOOK } from './householdRulebook.js';
 
 let rulebookReadyUserId = null;
+const RULEBOOK_CACHE_VERSION = 'v1';
 
 function processType(cashflow, subType) {
   if (cashflow === 'income') return subType === '借入' ? 'borrowing' : 'income';
@@ -14,8 +15,21 @@ function processType(cashflow, subType) {
   return 'normal';
 }
 
+function rulebookCacheKey(userId) {
+  return `household-rulebook-ready:${RULEBOOK_CACHE_VERSION}:${userId}`;
+}
+
 async function ensureHouseholdRulebook(userId) {
   if (rulebookReadyUserId === userId) return;
+
+  try {
+    if (localStorage.getItem(rulebookCacheKey(userId)) === '1') {
+      rulebookReadyUserId = userId;
+      return;
+    }
+  } catch (_) {
+    // localStorage unavailable; fall back to the normal initialization.
+  }
 
   const cards = HOUSEHOLD_RULEBOOK.cards.map(([name, close, before, after, withdrawal]) => ({
     user_id: userId,
@@ -158,6 +172,11 @@ async function ensureHouseholdRulebook(userId) {
   if (be) throw be;
 
   rulebookReadyUserId = userId;
+  try {
+    localStorage.setItem(rulebookCacheKey(userId), '1');
+  } catch (_) {
+    // Keep the in-memory cache even when persistent storage is unavailable.
+  }
 }
 
 export async function loadHousehold(userId) {
