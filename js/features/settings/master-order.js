@@ -21,7 +21,7 @@ export function enhanceMasterOrder(s, refresh) {
   const section = document.createElement('section');
   section.id = 'master-order-section';
   section.className = 'card';
-  section.innerHTML = `<h3>その他の表示順</h3><p class="muted small">摘要・決済方法・カード・口座・負債を表示する順番を設定します。↑↓で並び替えできます。</p><div id="master-order-groups"></div>`;
+  section.innerHTML = `<h3>その他の表示順</h3><p class="muted small">摘要・決済方法・カード・口座・負債を表示する順番を設定します。</p><div id="master-order-groups"></div>`;
   const anchor = document.getElementById('category-order-section') || document.querySelector('#app .card:nth-of-type(2)') || document.querySelector('#app .card');
   if (anchor) anchor.parentNode.insertBefore(section, anchor);
 
@@ -34,15 +34,14 @@ export function enhanceMasterOrder(s, refresh) {
   const render = () => {
     groups.innerHTML = TYPES.map((type) => {
       const items = lists[type.key];
-      if (!items.length) return `<div class="master-order-group"><h4>${type.label}</h4><p class="muted small">まだ登録がありません。</p></div>`;
-      return `<div class="master-order-group"><h4>${type.label}</h4>${items.map((item, index) => `
+      return `<details class="order-parent"><summary>${type.label}<span class="order-count">${items.length}件</span></summary><div class="order-parent-body">${items.length ? items.map((item, index) => `
         <div class="master-order-row" data-master-type="${type.key}" data-master-id="${esc(item.id)}">
           <div><b>${esc(item.name)}</b><div class="muted small">${index + 1}番目</div></div>
           <div class="master-order-actions">
             <button type="button" class="light" data-master-move="up" ${index === 0 ? 'disabled' : ''}>↑</button>
             <button type="button" class="light" data-master-move="down" ${index === items.length - 1 ? 'disabled' : ''}>↓</button>
           </div>
-        </div>`).join('')}</div>`;
+        </div>`).join('') : '<p class="muted small">まだ登録がありません。</p>'}</div></details>`;
     }).join('');
   };
 
@@ -91,7 +90,7 @@ export function enhanceMasterOrder(s, refresh) {
   if (!document.getElementById('master-order-style')) {
     const style = document.createElement('style');
     style.id = 'master-order-style';
-    style.textContent = '.master-order-group{margin-top:14px}.master-order-group:first-child{margin-top:0}.master-order-group h4{margin:0 0 6px}.master-order-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #dfe4ee}.master-order-row:last-child{border-bottom:0}.master-order-actions{display:flex;gap:6px}.master-order-actions button{min-width:44px;min-height:44px}';
+    style.textContent = '.order-parent{border:1px solid #dfe4ee;border-radius:12px;margin-top:8px}.order-parent summary{cursor:pointer;list-style:none;padding:14px 16px;font-weight:700}.order-parent summary::-webkit-details-marker{display:none}.order-parent summary:after{content:"＋";float:right}.order-parent[open] summary:after{content:"−"}.order-count{float:right;margin-right:22px;color:#98a3bf;font-size:12px}.order-parent-body{padding:0 16px 8px}.master-order-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #dfe4ee}.master-order-row:last-child{border-bottom:0}.master-order-actions{display:flex;gap:6px}.master-order-actions button{min-width:44px;min-height:44px}';
     document.head.appendChild(style);
   }
   render();
