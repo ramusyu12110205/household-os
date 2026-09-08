@@ -12,6 +12,8 @@ import { renderAssets,bindAssets } from './features/assets/assets-v2.js?v=202609
 import { renderSettings,bindSettings } from './features/settings/settings.js?v=20260907c';
 import { enhanceCategoryOrder } from './features/settings/category-order.js?v=20260908';
 import { enhanceMasterOrder } from './features/settings/master-order.js?v=20260908';
+import { enhanceSummaryPaymentLinks } from './features/settings/summary-payment-link.js?v=20260908';
+import { enhanceSummaryPaymentFilter } from './features/transactions/summary-payment-filter.js?v=20260908';
 const pages={home:renderHome,input:renderInput,history:renderHistory,monthly:renderMonthly,cards:renderCards,assets:renderAssets,settings:renderSettings};
 function sortMasterState(s){
   ['summaries','payments','cards','accounts','categories'].forEach(key=>{
@@ -42,7 +44,7 @@ function bindEnterToNextInput(){
     document.getElementById('tx-save')?.click();
   });
 }
-function bind(page){document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>render(b.dataset.page));document.querySelector('[data-action="logout"]')?.addEventListener('click',()=>supabase.auth.signOut());if(page==='input'){bindInput(state,()=>render('input'));bindEnterToNextInput()}if(page==='history')bindHistory(render);if(page==='monthly')bindMonthly(state,refresh);if(page==='assets')bindAssets(state,refresh);if(page==='settings'){bindSettings(state,refresh);enhanceCategoryOrder(state,refresh);enhanceMasterOrder(state,refresh)}document.dispatchEvent(new CustomEvent('household:rendered',{detail:{page}}))}
+function bind(page){document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>render(b.dataset.page));document.querySelector('[data-action="logout"]')?.addEventListener('click',()=>supabase.auth.signOut());if(page==='input'){bindInput(state,()=>render('input'));bindEnterToNextInput();enhanceSummaryPaymentFilter(state)}if(page==='history')bindHistory(render);if(page==='monthly')bindMonthly(state,refresh);if(page==='assets')bindAssets(state,refresh);if(page==='settings'){bindSettings(state,refresh);enhanceCategoryOrder(state,refresh);enhanceMasterOrder(state,refresh);enhanceSummaryPaymentLinks(state,refresh)}document.dispatchEvent(new CustomEvent('household:rendered',{detail:{page}}))}
 async function boot(user){state.user=user;setState(sortMasterState(await loadHousehold(user.id)));window.__household_state=state;render('home')}
 supabase.auth.getSession().then(({data:{session}})=>session?boot(session.user):renderLogin());
 supabase.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_IN'&&session&&!state.user)boot(session.user);if(event==='SIGNED_OUT'){state.user=null;renderLogin()}});
