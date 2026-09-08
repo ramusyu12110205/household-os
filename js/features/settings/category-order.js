@@ -12,7 +12,7 @@ export function enhanceCategoryOrder(s, refresh) {
   const section = document.createElement('section');
   section.id = 'category-order-section';
   section.className = 'card';
-  section.innerHTML = `<h3>カテゴリの表示順</h3><p class="muted small">家計の記録やカテゴリ一覧で表示する順番を設定します。↑↓で並び替えできます。</p><div id="category-order-list"></div>`;
+  section.innerHTML = `<h3>カテゴリの表示順</h3><p class="muted small">カテゴリを表示する順番を設定します。↑↓で並び替えできます。</p><div id="category-order-list"></div>`;
   const anchor = document.querySelector('#app .card:nth-of-type(2)') || document.querySelector('#app .card');
   if (anchor) anchor.parentNode.insertBefore(section, anchor);
 
@@ -23,14 +23,14 @@ export function enhanceCategoryOrder(s, refresh) {
   }
 
   const render = () => {
-    list.innerHTML = categories.map((category, index) => `
+    list.innerHTML = `<details class="order-parent" closed><summary>カテゴリ一覧<span class="order-count">${categories.length}件</span></summary><div class="order-parent-body">${categories.map((category, index) => `
       <div class="category-order-row" data-category-id="${esc(category.id)}">
         <div><b>${esc(category.name)}</b><div class="muted small">${index + 1}番目</div></div>
         <div class="category-order-actions">
           <button type="button" class="light" data-move="up" ${index === 0 ? 'disabled' : ''}>↑</button>
           <button type="button" class="light" data-move="down" ${index === categories.length - 1 ? 'disabled' : ''}>↓</button>
         </div>
-      </div>`).join('');
+      </div>`).join('')}</div></details>`;
   };
 
   const saveOrder = async () => {
@@ -73,35 +73,8 @@ export function enhanceCategoryOrder(s, refresh) {
   if (!document.getElementById('category-order-style')) {
     const style = document.createElement('style');
     style.id = 'category-order-style';
-    style.textContent = '.category-order-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #26314d}.category-order-row:last-child{border-bottom:0}.category-order-actions{display:flex;gap:6px}.category-order-actions button{min-width:44px;min-height:44px}';
+    style.textContent = '.order-parent{border:1px solid #dfe4ee;border-radius:12px;margin-top:8px}.order-parent summary{cursor:pointer;list-style:none;padding:14px 16px;font-weight:700}.order-parent summary::-webkit-details-marker{display:none}.order-parent summary:after{content:"＋";float:right}.order-parent[open] summary:after{content:"−"}.order-count{float:right;margin-right:22px;color:#98a3bf;font-size:12px}.order-parent-body{padding:0 16px 8px}.category-order-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #dfe4ee}.category-order-row:last-child{border-bottom:0}.category-order-actions{display:flex;gap:6px}.category-order-actions button{min-width:44px;min-height:44px}';
     document.head.appendChild(style);
   }
   render();
-}
-
-export function enhanceRegisteredCollapse() {
-  const list = document.querySelector('#app .card .list');
-  if (!list) return;
-  list.querySelectorAll('.list-item').forEach((item) => {
-    if (item.dataset.collapsible === '1') return;
-    item.dataset.collapsible = '1';
-    const preview = item.cloneNode(true);
-    preview.querySelectorAll('button').forEach((b) => b.remove());
-    const text = preview.textContent.replace(/\s+/g, ' ').trim();
-    const details = document.createElement('details');
-    details.className = 'registered-details';
-    const summary = document.createElement('summary');
-    summary.textContent = text;
-    const body = document.createElement('div');
-    body.className = 'registered-details-body';
-    body.innerHTML = item.innerHTML;
-    details.append(summary, body);
-    item.replaceWith(details);
-  });
-  if (!document.getElementById('registered-collapse-style')) {
-    const style = document.createElement('style');
-    style.id = 'registered-collapse-style';
-    style.textContent = '.registered-details{border:1px solid #dfe4ee;border-radius:12px;margin:8px 0;background:inherit}.registered-details summary{cursor:pointer;list-style:none;padding:14px 16px;font-weight:700}.registered-details summary::-webkit-details-marker{display:none}.registered-details summary:after{content:"＋";float:right;font-weight:700}.registered-details[open] summary:after{content:"−"}.registered-details-body{padding:0 16px 14px}.registered-details-body .list-item{border:0;margin:0;padding:0}.registered-details-body button{margin-top:8px}';
-    document.head.appendChild(style);
-  }
 }
