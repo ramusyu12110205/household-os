@@ -78,3 +78,30 @@ export function enhanceCategoryOrder(s, refresh) {
   }
   render();
 }
+
+export function enhanceRegisteredCollapse() {
+  const list = document.querySelector('#app .card .list');
+  if (!list) return;
+  list.querySelectorAll('.list-item').forEach((item) => {
+    if (item.dataset.collapsible === '1') return;
+    item.dataset.collapsible = '1';
+    const preview = item.cloneNode(true);
+    preview.querySelectorAll('button').forEach((b) => b.remove());
+    const text = preview.textContent.replace(/\s+/g, ' ').trim();
+    const details = document.createElement('details');
+    details.className = 'registered-details';
+    const summary = document.createElement('summary');
+    summary.textContent = text;
+    const body = document.createElement('div');
+    body.className = 'registered-details-body';
+    body.innerHTML = item.innerHTML;
+    details.append(summary, body);
+    item.replaceWith(details);
+  });
+  if (!document.getElementById('registered-collapse-style')) {
+    const style = document.createElement('style');
+    style.id = 'registered-collapse-style';
+    style.textContent = '.registered-details{border:1px solid #dfe4ee;border-radius:12px;margin:8px 0;background:inherit}.registered-details summary{cursor:pointer;list-style:none;padding:14px 16px;font-weight:700}.registered-details summary::-webkit-details-marker{display:none}.registered-details summary:after{content:"＋";float:right;font-weight:700}.registered-details[open] summary:after{content:"−"}.registered-details-body{padding:0 16px 14px}.registered-details-body .list-item{border:0;margin:0;padding:0}.registered-details-body button{margin-top:8px}';
+    document.head.appendChild(style);
+  }
+}
