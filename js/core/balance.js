@@ -2,7 +2,7 @@ import { actualAmount } from './transactionRules.js';
 
 export function calculateBalances(state){
   const accounts=new Map(state.accounts.map(a=>[String(a.id),{...a,balance:Number(a.initial_balance||0)}]));
-  const cards=new Map(state.cards.map(c=>[String(c.id),{...c,balance:0}]));
+  const cards=new Map(state.cards.map(c=>[String(c.id),{...c,balance:Number(c.initial_balance||0)}]));
   const txs=[...state.transactions].sort((a,b)=>String(a.transaction_date).localeCompare(String(b.transaction_date))||String(a.created_at||'').localeCompare(String(b.created_at||'')));
   for(const t of txs){
     const n=actualAmount(t.amount,t.points_used);
