@@ -2,7 +2,7 @@ import { supabase } from '../../core/supabase.js';
 
 export async function enhanceContentSummaryFilter(s){
   const input=document.getElementById('tx-desc'),summary=document.getElementById('tx-summary');
-  if(!input||!summary||!s.user)return;
+  if(!input||!summary||!s?.user?.id)return;
   const {data:rules,error}=await supabase.from('household_content_rules').select('name,summary_ids').eq('user_id',s.user.id).eq('archived',false).order('sort_order',{ascending:true}).order('name');
   if(error)return;
   const contentRules=Array.isArray(rules)?rules:[];
