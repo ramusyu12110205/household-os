@@ -1,6 +1,5 @@
 import { supabase } from './supabase.js';
 import { HOUSEHOLD_RULEBOOK } from './householdRulebook.js';
-
 let rulebookReadyUserId = null;
 const RULEBOOK_CACHE_VERSION = 'v1';
 function processType(cashflow, subType) { if (cashflow === 'income') return subType === '借入' ? 'borrowing' : 'income'; if (cashflow === 'repayment') return 'repayment'; if (cashflow === 'transfer') { if (subType === '引落') return 'card_payment'; if (subType === 'チャージ') return 'charge'; return 'transfer'; } return 'normal'; }
@@ -27,7 +26,7 @@ async function ensureHouseholdRulebook(userId) {
 }
 export async function loadHousehold(userId){
   await ensureHouseholdRulebook(userId);
-  const [settings,summaries,payments,cards,accounts,categories,budgets,transactions,contentRules]=await Promise.all([
+  const [settings,summaries,payments,cards,accounts,categories,budgets,transactions]=await Promise.all([
     supabase.from('household_settings').select('*').eq('user_id',userId).maybeSingle(),
     supabase.from('household_summaries').select('*').eq('user_id',userId).eq('archived',false).order('sort_order').order('name'),
     supabase.from('household_payment_methods').select('*').eq('user_id',userId).eq('archived',false).order('name'),
@@ -36,8 +35,7 @@ export async function loadHousehold(userId){
     supabase.from('household_categories').select('*').eq('user_id',userId).eq('archived',false).order('sort_order').order('name'),
     supabase.from('household_budgets').select('*').eq('user_id',userId).order('year_month',{ascending:false}),
     supabase.from('household_transactions').select('*').eq('user_id',userId).order('transaction_date',{ascending:false}).order('created_at',{ascending:false}),
-    supabase.from('household_content_rules').select('*').eq('user_id',userId).eq('archived',false).order('sort_order').order('name'),
   ]);
-  const results=[settings,summaries,payments,cards,accounts,categories,budgets,transactions,contentRules];const error=results.find(result=>result.error)?.error;if(error)throw error;
-  return {settings:settings.data,summaries:summaries.data||[],payments:payments.data||[],cards:cards.data||[],accounts:accounts.data||[],categories:categories.data||[],budgets:budgets.data||[],transactions:transactions.data||[],contentRules:contentRules.data||[]};
+  const results=[settings,summaries,payments,cards,accounts,categories,budgets,transactions];const error=results.find(result=>result.error)?.error;if(error)throw error;
+  return {settings:settings.data,summaries:summaries.data||[],payments:payments.data||[],cards:cards.data||[],accounts:accounts.data||[],categories:categories.data||[],budgets:budgets.data||[],transactions:transactions.data||[]};
 }
