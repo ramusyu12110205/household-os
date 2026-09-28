@@ -1,4 +1,4 @@
-import { supabase } from '../core/supabase.js';
+import { supabase,ensureHouseholdAuth } from '../core/supabase.js';
 
 const PIN_SESSION_KEY = 'household-os:pin-unlocked';
 
@@ -14,6 +14,7 @@ function pinScreen(title, message, mode){
     if(!/^\d{4}$/.test(pin)){error.textContent='4桁の数字を入力してください。';return;}
     submit.disabled=true;error.textContent='';
     try{
+      await ensureHouseholdAuth();
       if(mode==='setup'){
         const {data,error:rpcError}=await supabase.rpc('set_household_pin',{p_pin:pin});
         if(rpcError)throw rpcError;
@@ -33,6 +34,7 @@ function pinScreen(title, message, mode){
 
 export async function renderLogin(){
   try{
+    await ensureHouseholdAuth();
     const {data,error}=await supabase.rpc('household_pin_configured');
     if(error)throw error;
     pinScreen(data?'開く':'PINを設定','4桁PINで家計簿を保護しています。',data?'verify':'setup');
