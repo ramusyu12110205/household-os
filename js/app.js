@@ -1,7 +1,7 @@
 import { state,setState } from './core/state.js';
 import { loadHousehold } from './core/data-fresh.js';
 import { $ } from './core/utils.js';
-import { renderLogin,clearPinSession,isPinUnlocked } from './features/auth.js';
+import { renderLogin,clearPinSession,isPinUnlocked } from './features/auth.js?v=20260928a';
 import { supabase } from './core/supabase.js';
 import { renderHome } from './features/home.js?v=20260907b';
 import { renderInput,bindInput } from './features/transactions/input.js?v=20260907f';
