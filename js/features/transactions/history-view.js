@@ -27,52 +27,16 @@ export function enhanceHistoryView(s){
   const characterAssets={hanamaruHook:new URL('../../../assets/characters/Hanamaru_hook ver.PNG',import.meta.url).href};
   function updateCount(count){if(originalCount)originalCount.textContent=`${count}件`}
   function removeClinger(){list.querySelectorAll('.history-clinger').forEach(x=>{x._repositionCleanup?.();x.remove()})}
-  function rectOverlapArea(a,b){const w=Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left));const h=Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));return w*h}
-  function getBlockedRects(target){
-    const targetRect=target.getBoundingClientRect();
-    const rects=[];
-    target.querySelectorAll('*').forEach(el=>{
-      if(el.closest('.history-clinger'))return;
-      const r=el.getBoundingClientRect();
-      if(r.width>4&&r.height>4&&r.bottom>targetRect.top&&r.top<targetRect.bottom)rects.push(r);
-    });
-    const previous=target.previousElementSibling;
-    if(previous?.classList.contains('history-date-heading')){
-      const r=previous.getBoundingClientRect();
-      if(r.width>0&&r.height>0)rects.push(r);
-    }
-    return rects;
-  }
   function placeClinger(target,clinger){
     const card=target.getBoundingClientRect();
     const w=clinger.getBoundingClientRect().width||100;
-    const h=clinger.getBoundingClientRect().height||100;
-    const gap=4;
-    const yTop=-h+gap;
-    const yBottom=card.height-gap;
     const maxX=Math.max(4,card.width-w-4);
-    const candidates=[
-      {x:4,y:yTop,flip:false},
-      {x:maxX*.25,y:yTop,flip:false},
-      {x:maxX*.5,y:yTop,flip:false},
-      {x:maxX*.75,y:yTop,flip:true},
-      {x:maxX,y:yTop,flip:true},
-      {x:4,y:yBottom,flip:false},
-      {x:maxX,y:yBottom,flip:true}
-    ];
-    const blocked=getBlockedRects(target);
-    const scored=candidates.map(c=>{
-      const r={left:card.left+c.x,top:card.top+c.y,right:card.left+c.x+w,bottom:card.top+c.y+h};
-      const overlap=blocked.reduce((sum,b)=>sum+rectOverlapArea(r,b),0);
-      const cardArea=w*h;
-      const normalized=overlap/Math.max(1,cardArea);
-      return {...c,score:normalized};
-    }).sort((a,b)=>a.score-b.score);
-    const best=scored[0]?.score??0;
-    const acceptable=scored.filter(c=>c.score<=best+0.08);
-    const chosen=acceptable[Math.floor(Math.random()*acceptable.length)]||scored[0]||candidates[0];
+    const candidates=[{x:4,flip:false},{x:maxX*.25,flip:false},{x:maxX*.5,flip:false},{x:maxX*.75,flip:true},{x:maxX,flip:true}];
+    const chosen=candidates[Math.floor(Math.random()*candidates.length)];
     clinger.style.setProperty('left',`${chosen.x}px`,'important');
-    clinger.style.setProperty('top',`${chosen.y}px`,'important');
+    clinger.style.setProperty('right','auto','important');
+    clinger.style.setProperty('top','auto','important');
+    clinger.style.setProperty('bottom','calc(100% - 5px)','important');
     clinger.classList.toggle('flip',chosen.flip);
   }
   function addClinger(visibleRecords){
