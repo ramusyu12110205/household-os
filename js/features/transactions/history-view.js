@@ -19,12 +19,11 @@ export function enhanceHistoryView(s){
   toolbar.innerHTML=`<div class="history-view-mode" role="tablist" aria-label="履歴表示"><button type="button" class="secondary history-mode active" data-history-mode="order">入力順</button><button type="button" class="secondary history-mode" data-history-mode="month">月別</button></div><div class="history-month-control" hidden><label for="history-month">対象月</label><select id="history-month">${months.map(m=>`<option value="${m}"${m===defaultMonth?' selected':''}>${m.replace('-','年')}月</option>`).join('')}</select></div>`;
   titleBlock.insertAdjacentElement('afterend',toolbar);
   const style=document.createElement('style');
-  style.textContent='.history-view-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;flex-wrap:wrap}.history-view-mode{display:flex;gap:6px}.history-view-mode .active{font-weight:700;outline:2px solid rgba(124,92,255,.35)}.history-month-control{display:flex;align-items:center;gap:8px}.history-month-control label{margin:0}.history-month-control select{min-width:140px}.history-date-heading{margin:16px 0 6px;padding:6px 10px;border-left:4px solid #6d5ce7;background:rgba(109,92,231,.08);border-radius:6px;font-weight:700}.history-date-heading:first-child{margin-top:0}.history-clinger{position:absolute;width:44px;height:auto;z-index:8;pointer-events:none;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.14));animation:history-clinger-sway 2.8s ease-in-out infinite;transform-origin:50% 100%;will-change:transform}.history-clinger img{display:block;width:100%;height:auto}.history-clinger.flip{transform:scaleX(-1)}@keyframes history-clinger-sway{0%,100%{rotate:-1deg;translate:0 0}50%{rotate:1deg;translate:0 1px}}';
+  style.textContent='.history-view-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;flex-wrap:wrap}.history-view-mode{display:flex;gap:6px}.history-view-mode .active{font-weight:700;outline:2px solid rgba(124,92,255,.35)}.history-month-control{display:flex;align-items:center;gap:8px}.history-month-control label{margin:0}.history-month-control select{min-width:140px}.history-date-heading{margin:16px 0 6px;padding:6px 10px;border-left:4px solid #6d5ce7;background:rgba(109,92,231,.08);border-radius:6px;font-weight:700}.history-date-heading:first-child{margin-top:0}.history-clinger{position:absolute;width:58px;height:auto;z-index:8;pointer-events:none;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.14));animation:history-clinger-sway 2.8s ease-in-out infinite;transform-origin:50% 100%;will-change:transform}.history-clinger img{display:block;width:100%;height:auto}.history-clinger.flip{transform:scaleX(-1)}@keyframes history-clinger-sway{0%,100%{rotate:-1deg;translate:0 0}50%{rotate:1deg;translate:0 1px}}';
   document.head.appendChild(style);
   const monthControl=toolbar.querySelector('.history-month-control');
   const monthSelect=toolbar.querySelector('#history-month');
   const modeButtons=[...toolbar.querySelectorAll('[data-history-mode]')];
-  // GitHub にアップロードした透過PNGを使用する。旧キャラ画像は参照しない。
   const characterAssets={hanamaru:new URL('../../../assets/characters/hanamaru_transparent.png',import.meta.url).href};
   function updateCount(count){if(originalCount)originalCount.textContent=`${count}件`}
   function removeClinger(){list.querySelectorAll('.history-clinger').forEach(x=>x.remove())}
@@ -37,8 +36,8 @@ export function enhanceHistoryView(s){
   }
   function placeClinger(target,clinger){
     const card=target.getBoundingClientRect();
-    const w=clinger.getBoundingClientRect().width||44;
-    const h=clinger.getBoundingClientRect().height||44;
+    const w=clinger.getBoundingClientRect().width||58;
+    const h=clinger.getBoundingClientRect().height||58;
     const candidates=[
       {x:8,y:-h+8,flip:false},
       {x:Math.max(8,(card.width-w)/2),y:-h+8,flip:false},
