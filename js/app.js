@@ -6,7 +6,7 @@ import { supabase,ensureHouseholdAuth,clearHouseholdAuth } from './core/supabase
 import { renderHome } from './features/home.js?v=20260907b';
 import { renderInput,bindInput } from './features/transactions/input.js?v=20260907f';
 import { renderHistory,bindHistory } from './features/transactions/history.js?v=20260907b';
-import { enhanceHistoryView } from './features/transactions/history-view.js?v=20260929b';
+import { enhanceHistoryView } from './features/transactions/history-view.js?v=20260929d';
 import { renderMonthly,bindMonthly } from './features/budgets/monthly.js';
 import { renderCards } from './features/credit/cards.js';
 import { renderAssets,bindAssets } from './features/assets/assets-v2.js?v=20260909';
