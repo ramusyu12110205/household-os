@@ -14,13 +14,16 @@ export function enhanceHistoryView(s){
     date:node.querySelector('.muted.small')?.textContent.match(/\d{4}-\d{2}-\d{2}/)?.[0]||''
   }));
   const months=[...new Set(records.map(x=>x.date.slice(0,7)).filter(Boolean))].sort();
+  const today=new Date();
+  const currentMonth=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  const defaultMonth=months.includes(currentMonth)?currentMonth:(months[months.length-1]||'');
 
   const titleBlock=section.querySelector('.between');
   if(!titleBlock)return;
   const originalCount=titleBlock.querySelector('.muted.small');
   const toolbar=document.createElement('div');
   toolbar.className='history-view-toolbar';
-  toolbar.innerHTML=`<div class="history-view-mode" role="tablist" aria-label="履歴表示"><button type="button" class="secondary history-mode active" data-history-mode="order">入力順</button><button type="button" class="secondary history-mode" data-history-mode="month">月別</button></div><div class="history-month-control" hidden><label for="history-month">対象月</label><select id="history-month">${months.map(m=>`<option value="${m}">${m.replace('-','年')}月</option>`).join('')}</select></div>`;
+  toolbar.innerHTML=`<div class="history-view-mode" role="tablist" aria-label="履歴表示"><button type="button" class="secondary history-mode active" data-history-mode="order">入力順</button><button type="button" class="secondary history-mode" data-history-mode="month">月別</button></div><div class="history-month-control" hidden><label for="history-month">対象月</label><select id="history-month">${months.map(m=>`<option value="${m}"${m===defaultMonth?' selected':''}>${m.replace('-','年')}月</option>`).join('')}</select></div>`;
   titleBlock.insertAdjacentElement('afterend',toolbar);
 
   const style=document.createElement('style');
