@@ -25,7 +25,7 @@ export function enhanceHistoryView(s){
   const monthControl=toolbar.querySelector('.history-month-control');
   const monthSelect=toolbar.querySelector('#history-month');
   const modeButtons=[...toolbar.querySelectorAll('[data-history-mode]')];
-  const characterAssets={cat:new URL('../../../assets/characters/cat.png',import.meta.url).href};
+  const characterAssets={hanamaru:new URL('../../../assets/characters/hanamaru_transparent.png',import.meta.url).href};
 
   function updateCount(count){if(originalCount)originalCount.textContent=`${count}件`}
   function removeClinger(){list.querySelectorAll('.history-clinger').forEach(x=>x.remove())}
@@ -40,7 +40,7 @@ export function enhanceHistoryView(s){
     const flip=Math.random()>0.5?' flip':'';
     clinger.className=`history-clinger ${side}${flip}`;
     const img=document.createElement('img');
-    img.src=characterAssets.cat;
+    img.src=characterAssets.hanamaru;
     img.alt='';
     clinger.appendChild(img);
     target.appendChild(clinger);
