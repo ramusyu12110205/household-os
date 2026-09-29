@@ -27,12 +27,12 @@ export function enhanceHistoryView(s){
   const characterAssets={hanamaruHook:new URL('../../../assets/characters/Hanamaru_hook ver.PNG',import.meta.url).href};
   function updateCount(count){if(originalCount)originalCount.textContent=`${count}件`}
   function removeClinger(){list.querySelectorAll('.history-clinger').forEach(x=>{x._repositionCleanup?.();x.remove()})}
-  function placeClinger(target,clinger){
+  function placeClinger(target,clinger,slotIndex){
     const card=target.getBoundingClientRect();
     const w=clinger.getBoundingClientRect().width||100;
     const maxX=Math.max(4,card.width-w-4);
     const candidates=[{x:4,flip:false},{x:maxX*.25,flip:false},{x:maxX*.5,flip:false},{x:maxX*.75,flip:true},{x:maxX,flip:true}];
-    const chosen=candidates[Math.floor(Math.random()*candidates.length)];
+    const chosen=candidates[Math.max(0,Math.min(slotIndex,candidates.length-1))];
     clinger.style.setProperty('left',`${chosen.x}px`,'important');
     clinger.style.setProperty('right','auto','important');
     clinger.style.setProperty('top','auto','important');
@@ -46,6 +46,7 @@ export function enhanceHistoryView(s){
     const pool=safeRecords.length?safeRecords:visibleRecords;
     const target=pool[Math.floor(Math.random()*pool.length)]?.node;
     if(!target)return;
+    const slotIndex=Math.floor(Math.random()*5);
     target.style.setProperty('position','relative','important');
     target.style.setProperty('overflow','visible','important');
     const clinger=document.createElement('div');
@@ -55,13 +56,12 @@ export function enhanceHistoryView(s){
     img.alt='';
     clinger.appendChild(img);
     target.appendChild(clinger);
-    const place=()=>placeClinger(target,clinger);
+    const place=()=>placeClinger(target,clinger,slotIndex);
     if(img.complete)requestAnimationFrame(place);else img.addEventListener('load',place,{once:true});
     const reposition=()=>{if(clinger.isConnected)requestAnimationFrame(place)};
     window.addEventListener('resize',reposition,{passive:true});
     window.addEventListener('orientationchange',reposition,{passive:true});
-    window.addEventListener('scroll',reposition,{passive:true});
-    clinger._repositionCleanup=()=>{window.removeEventListener('resize',reposition);window.removeEventListener('orientationchange',reposition);window.removeEventListener('scroll',reposition)};
+    clinger._repositionCleanup=()=>{window.removeEventListener('resize',reposition);window.removeEventListener('orientationchange',reposition)};
   }
   function renderOrder(){list.replaceChildren();const sorted=[...records].sort((a,b)=>a.date.localeCompare(b.date)||a.index-b.index);sorted.forEach(x=>{x.node.hidden=false;list.appendChild(x.node)});updateCount(sorted.length);addClinger(sorted)}
   function renderMonth(){
