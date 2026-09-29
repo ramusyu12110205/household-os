@@ -38,7 +38,7 @@ export function enhanceHistoryView(s){
     const card=target.getBoundingClientRect();
     const w=clinger.getBoundingClientRect().width||72;
     const h=clinger.getBoundingClientRect().height||72;
-    // キャラの足元をカード上端の線に合わせる。少しだけ線へ重ねて「乗っている」見た目にする。
+    // キャラの足元をカード上端の線に合わせ、線に少しだけ重ねて「乗っている」見た目にする。
     const y=-h+1;
     const candidates=[
       {x:6,y,flip:false},
@@ -46,6 +46,12 @@ export function enhanceHistoryView(s){
       {x:Math.max(8,card.width-w-6),y,flip:true}
     ];
     const blocked=getBlockedRects(target);
+    // 月別表示では日付見出しがカード直前にあるため、そこへ食い込む候補も避ける。
+    const previous=target.previousElementSibling;
+    if(previous?.classList.contains('history-date-heading')){
+      const r=previous.getBoundingClientRect();
+      if(r.width>0&&r.height>0)blocked.push(r);
+    }
     const scored=candidates.map(c=>{
       const r={left:card.left+c.x,top:card.top+c.y,right:card.left+c.x+w,bottom:card.top+c.y+h};
       const overlap=blocked.reduce((sum,b)=>sum+rectOverlapArea(r,b),0);
@@ -61,7 +67,10 @@ export function enhanceHistoryView(s){
   function addClinger(visibleRecords){
     removeClinger();
     if(!visibleRecords.length)return;
-    const target=visibleRecords[Math.floor(Math.random()*visibleRecords.length)]?.node;
+    // 日付見出し直後のカードは、キャラを上端に乗せると見出し文字に重なりやすいので除外。
+    const safeRecords=visibleRecords.filter(x=>!x.node.previousElementSibling?.classList.contains('history-date-heading'));
+    const pool=safeRecords.length?safeRecords:visibleRecords;
+    const target=pool[Math.floor(Math.random()*pool.length)]?.node;
     if(!target)return;
     target.style.position='relative';
     target.style.overflow='visible';
