@@ -35,13 +35,16 @@ export function enhanceHistoryView(s){
   function updateCount(count){if(originalCount)originalCount.textContent=`${count}件`}
   function renderOrder(){
     clearGroups();
-    records.sort((a,b)=>a.index-b.index).forEach(x=>list.appendChild(x.node));
+    records.forEach(x=>{x.node.hidden=false;list.appendChild(x.node)});
+    records.sort((a,b)=>a.index-b.index);
     updateCount(records.length);
   }
   function renderMonth(){
     clearGroups();
     const month=monthSelect.value;
     const selected=records.filter(x=>x.date.startsWith(month));
+    const selectedSet=new Set(selected.map(x=>x.node));
+    records.forEach(x=>{x.node.hidden=!selectedSet.has(x.node)});
     const byDate=new Map();
     selected.forEach(x=>{if(!byDate.has(x.date))byDate.set(x.date,[]);byDate.get(x.date).push(x)});
     [...byDate.keys()].sort().reverse().forEach(date=>{
