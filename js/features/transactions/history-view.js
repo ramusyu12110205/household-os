@@ -19,45 +19,58 @@ export function enhanceHistoryView(s){
   toolbar.innerHTML=`<div class="history-view-mode" role="tablist" aria-label="履歴表示"><button type="button" class="secondary history-mode active" data-history-mode="order">入力順</button><button type="button" class="secondary history-mode" data-history-mode="month">月別</button></div><div class="history-month-control" hidden><label for="history-month">対象月</label><select id="history-month">${months.map(m=>`<option value="${m}"${m===defaultMonth?' selected':''}>${m.replace('-','年')}月</option>`).join('')}</select></div>`;
   titleBlock.insertAdjacentElement('afterend',toolbar);
   const style=document.createElement('style');
-  style.textContent='.history-view-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;flex-wrap:wrap}.history-view-mode{display:flex;gap:6px}.history-view-mode .active{font-weight:700;outline:2px solid rgba(124,92,255,.35)}.history-month-control{display:flex;align-items:center;gap:8px}.history-month-control label{margin:0}.history-month-control select{min-width:140px}.history-date-heading{margin:16px 0 6px;padding:6px 10px;border-left:4px solid #6d5ce7;background:rgba(109,92,231,.08);border-radius:6px;font-weight:700}.history-date-heading:first-child{margin-top:0}.history-clinger{position:absolute!important;left:0;top:0;width:88px;height:auto;z-index:8;pointer-events:none;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.14));animation:history-clinger-sway 2.8s ease-in-out infinite;transform-origin:50% 100%;will-change:transform}.history-clinger img{display:block;width:100%;height:auto}.history-clinger.flip{transform:scaleX(-1)}@keyframes history-clinger-sway{0%,100%{rotate:-1deg;translate:0 0}50%{rotate:1deg;translate:0 1px}}';
+  style.textContent='.history-view-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;flex-wrap:wrap}.history-view-mode{display:flex;gap:6px}.history-view-mode .active{font-weight:700;outline:2px solid rgba(124,92,255,.35)}.history-month-control{display:flex;align-items:center;gap:8px}.history-month-control label{margin:0}.history-month-control select{min-width:140px}.history-date-heading{margin:16px 0 6px;padding:6px 10px;border-left:4px solid #6d5ce7;background:rgba(109,92,231,.08);border-radius:6px;font-weight:700}.history-date-heading:first-child{margin-top:0}.history-clinger{position:absolute!important;width:100px;height:auto;z-index:8;pointer-events:none;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.14));animation:history-clinger-sway 2.8s ease-in-out infinite;transform-origin:50% 100%;will-change:transform}.history-clinger img{display:block;width:100%;height:auto}.history-clinger.flip{transform:scaleX(-1)}@keyframes history-clinger-sway{0%,100%{rotate:-1deg;translate:0 0}50%{rotate:1deg;translate:0 1px}}';
   document.head.appendChild(style);
   const monthControl=toolbar.querySelector('.history-month-control');
   const monthSelect=toolbar.querySelector('#history-month');
   const modeButtons=[...toolbar.querySelectorAll('[data-history-mode]')];
   const characterAssets={hanamaruHook:new URL('../../../assets/characters/Hanamaru_hook ver.PNG',import.meta.url).href};
   function updateCount(count){if(originalCount)originalCount.textContent=`${count}件`}
-  function removeClinger(){list.querySelectorAll('.history-clinger').forEach(x=>x.remove())}
+  function removeClinger(){list.querySelectorAll('.history-clinger').forEach(x=>{x._repositionCleanup?.();x.remove()})}
   function rectOverlapArea(a,b){const w=Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left));const h=Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));return w*h}
   function getBlockedRects(target){
-    const selectors=['.between > div:first-child','.between > b','.row > *'];
+    const targetRect=target.getBoundingClientRect();
     const rects=[];
-    selectors.forEach(selector=>target.querySelectorAll(selector).forEach(el=>{if(el.closest('.history-clinger'))return;const r=el.getBoundingClientRect();if(r.width>0&&r.height>0)rects.push(r)}));
+    target.querySelectorAll('*').forEach(el=>{
+      if(el.closest('.history-clinger'))return;
+      const r=el.getBoundingClientRect();
+      if(r.width>4&&r.height>4&&r.bottom>targetRect.top&&r.top<targetRect.bottom)rects.push(r);
+    });
+    const previous=target.previousElementSibling;
+    if(previous?.classList.contains('history-date-heading')){
+      const r=previous.getBoundingClientRect();
+      if(r.width>0&&r.height>0)rects.push(r);
+    }
     return rects;
   }
   function placeClinger(target,clinger){
     const card=target.getBoundingClientRect();
-    const w=clinger.getBoundingClientRect().width||88;
-    const h=clinger.getBoundingClientRect().height||88;
-    const y=-h+1;
+    const w=clinger.getBoundingClientRect().width||100;
+    const h=clinger.getBoundingClientRect().height||100;
+    const gap=4;
+    const yTop=-h+gap;
+    const yBottom=card.height-gap;
+    const maxX=Math.max(4,card.width-w-4);
     const candidates=[
-      {x:6,y,flip:false},
-      {x:Math.max(8,(card.width-w)/2),y,flip:false},
-      {x:Math.max(8,card.width-w-6),y,flip:true}
+      {x:4,y:yTop,flip:false},
+      {x:maxX*.25,y:yTop,flip:false},
+      {x:maxX*.5,y:yTop,flip:false},
+      {x:maxX*.75,y:yTop,flip:true},
+      {x:maxX,y:yTop,flip:true},
+      {x:4,y:yBottom,flip:false},
+      {x:maxX,y:yBottom,flip:true}
     ];
     const blocked=getBlockedRects(target);
-    const previous=target.previousElementSibling;
-    if(previous?.classList.contains('history-date-heading')){
-      const r=previous.getBoundingClientRect();
-      if(r.width>0&&r.height>0)blocked.push(r);
-    }
     const scored=candidates.map(c=>{
       const r={left:card.left+c.x,top:card.top+c.y,right:card.left+c.x+w,bottom:card.top+c.y+h};
       const overlap=blocked.reduce((sum,b)=>sum+rectOverlapArea(r,b),0);
-      const insideLeft=Math.max(r.left,card.left),insideRight=Math.min(r.right,card.right),insideTop=Math.max(r.top,card.top),insideBottom=Math.min(r.bottom,card.bottom);
-      const inside=Math.max(0,insideRight-insideLeft)*Math.max(0,insideBottom-insideTop);
-      return {...c,score:overlap+inside*0.02};
+      const cardArea=w*h;
+      const normalized=overlap/Math.max(1,cardArea);
+      return {...c,score:normalized};
     }).sort((a,b)=>a.score-b.score);
-    const chosen=scored[0]||candidates[0];
+    const best=scored[0]?.score??0;
+    const acceptable=scored.filter(c=>c.score<=best+0.08);
+    const chosen=acceptable[Math.floor(Math.random()*acceptable.length)]||scored[0]||candidates[0];
     clinger.style.setProperty('left',`${chosen.x}px`,'important');
     clinger.style.setProperty('top',`${chosen.y}px`,'important');
     clinger.classList.toggle('flip',chosen.flip);
@@ -83,6 +96,8 @@ export function enhanceHistoryView(s){
     const reposition=()=>{if(clinger.isConnected)requestAnimationFrame(place)};
     window.addEventListener('resize',reposition,{passive:true});
     window.addEventListener('orientationchange',reposition,{passive:true});
+    window.addEventListener('scroll',reposition,{passive:true});
+    clinger._repositionCleanup=()=>{window.removeEventListener('resize',reposition);window.removeEventListener('orientationchange',reposition);window.removeEventListener('scroll',reposition)};
   }
   function renderOrder(){list.replaceChildren();const sorted=[...records].sort((a,b)=>a.date.localeCompare(b.date)||a.index-b.index);sorted.forEach(x=>{x.node.hidden=false;list.appendChild(x.node)});updateCount(sorted.length);addClinger(sorted)}
   function renderMonth(){
