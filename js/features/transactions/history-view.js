@@ -7,17 +7,11 @@ export function enhanceHistoryView(s){
 
   const items=[...list.querySelectorAll('.list-item')];
   if(!items.length)return;
-
-  const records=items.map((node,index)=>({
-    node,
-    index,
-    date:node.querySelector('.muted.small')?.textContent.match(/\d{4}-\d{2}-\d{2}/)?.[0]||''
-  }));
+  const records=items.map((node,index)=>({node,index,date:node.querySelector('.muted.small')?.textContent.match(/\d{4}-\d{2}-\d{2}/)?.[0]||''}));
   const months=[...new Set(records.map(x=>x.date.slice(0,7)).filter(Boolean))].sort();
   const today=new Date();
   const currentMonth=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
   const defaultMonth=months.includes(currentMonth)?currentMonth:(months[months.length-1]||'');
-
   const titleBlock=section.querySelector('.between');
   if(!titleBlock)return;
   const originalCount=titleBlock.querySelector('.muted.small');
@@ -25,21 +19,28 @@ export function enhanceHistoryView(s){
   toolbar.className='history-view-toolbar';
   toolbar.innerHTML=`<div class="history-view-mode" role="tablist" aria-label="履歴表示"><button type="button" class="secondary history-mode active" data-history-mode="order">入力順</button><button type="button" class="secondary history-mode" data-history-mode="month">月別</button></div><div class="history-month-control" hidden><label for="history-month">対象月</label><select id="history-month">${months.map(m=>`<option value="${m}"${m===defaultMonth?' selected':''}>${m.replace('-','年')}月</option>`).join('')}</select></div>`;
   titleBlock.insertAdjacentElement('afterend',toolbar);
-
   const style=document.createElement('style');
-  style.textContent='.history-view-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;flex-wrap:wrap}.history-view-mode{display:flex;gap:6px}.history-view-mode .active{font-weight:700;outline:2px solid rgba(124,92,255,.35)}.history-month-control{display:flex;align-items:center;gap:8px}.history-month-control label{margin:0}.history-month-control select{min-width:140px}.history-date-heading{margin:16px 0 6px;padding:6px 10px;border-left:4px solid #6d5ce7;background:rgba(109,92,231,.08);border-radius:6px;font-weight:700}.history-date-heading:first-child{margin-top:0}';
+  style.textContent='.history-view-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;flex-wrap:wrap}.history-view-mode{display:flex;gap:6px}.history-view-mode .active{font-weight:700;outline:2px solid rgba(124,92,255,.35)}.history-month-control{display:flex;align-items:center;gap:8px}.history-month-control label{margin:0}.history-month-control select{min-width:140px}.history-date-heading{margin:16px 0 6px;padding:6px 10px;border-left:4px solid #6d5ce7;background:rgba(109,92,231,.08);border-radius:6px;font-weight:700}.history-date-heading:first-child{margin-top:0}.history-surprise{margin:8px 0;padding:10px 14px;border:2px dashed #777;border-radius:12px;text-align:center;font-size:34px;line-height:1;transform:rotate(-2deg);background:#fff;box-shadow:3px 3px 0 rgba(0,0,0,.12);cursor:default}.history-surprise span{display:block;font-size:12px;margin-top:5px;font-weight:700;letter-spacing:.08em}';
   document.head.appendChild(style);
-
   const monthControl=toolbar.querySelector('.history-month-control');
   const monthSelect=toolbar.querySelector('#history-month');
   const modeButtons=[...toolbar.querySelectorAll('[data-history-mode]')];
-
   function updateCount(count){if(originalCount)originalCount.textContent=`${count}件`}
+  function addSurprise(){
+    if(list.querySelector('.history-surprise'))return;
+    const target=records[Math.floor(Math.random()*records.length)]?.node;
+    if(!target)return;
+    const surprise=document.createElement('div');
+    surprise.className='history-surprise';
+    surprise.innerHTML=`👽<span>なんかいる</span>`;
+    target.insertAdjacentElement('beforebegin',surprise);
+  }
   function renderOrder(){
     list.replaceChildren();
     records.sort((a,b)=>a.date.localeCompare(b.date)||a.index-b.index);
     records.forEach(x=>{x.node.hidden=false;list.appendChild(x.node)});
     updateCount(records.length);
+    addSurprise();
   }
   function renderMonth(){
     const month=monthSelect.value;
@@ -47,22 +48,11 @@ export function enhanceHistoryView(s){
     list.replaceChildren();
     const byDate=new Map();
     selected.forEach(x=>{x.node.hidden=false;if(!byDate.has(x.date))byDate.set(x.date,[]);byDate.get(x.date).push(x)});
-    [...byDate.keys()].sort().forEach(date=>{
-      const heading=document.createElement('div');
-      heading.className='history-date-heading';
-      const d=new Date(`${date}T00:00:00`);
-      heading.textContent=`${d.getMonth()+1}月${d.getDate()}日`;
-      list.appendChild(heading);
-      byDate.get(date).sort((a,b)=>a.index-b.index).forEach(x=>list.appendChild(x.node));
-    });
+    [...byDate.keys()].sort().forEach(date=>{const heading=document.createElement('div');heading.className='history-date-heading';const d=new Date(`${date}T00:00:00`);heading.textContent=`${d.getMonth()+1}月${d.getDate()}日`;list.appendChild(heading);byDate.get(date).sort((a,b)=>a.index-b.index).forEach(x=>list.appendChild(x.node));});
     updateCount(selected.length);
+    addSurprise();
   }
-  function setMode(mode){
-    modeButtons.forEach(b=>b.classList.toggle('active',b.dataset.historyMode===mode));
-    monthControl.hidden=mode!=='month';
-    if(mode==='month')renderMonth();else renderOrder();
-  }
-
+  function setMode(mode){modeButtons.forEach(b=>b.classList.toggle('active',b.dataset.historyMode===mode));monthControl.hidden=mode!=='month';if(mode==='month')renderMonth();else renderOrder();}
   modeButtons.forEach(button=>button.addEventListener('click',()=>setMode(button.dataset.historyMode)));
   monthSelect?.addEventListener('change',renderMonth);
 }
