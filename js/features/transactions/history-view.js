@@ -13,7 +13,7 @@ export function enhanceHistoryView(s){
     index,
     date:node.querySelector('.muted.small')?.textContent.match(/\d{4}-\d{2}-\d{2}/)?.[0]||''
   }));
-  const months=[...new Set(records.map(x=>x.date.slice(0,7)).filter(Boolean))].sort().reverse();
+  const months=[...new Set(records.map(x=>x.date.slice(0,7)).filter(Boolean))].sort();
 
   const titleBlock=section.querySelector('.between');
   if(!titleBlock)return;
@@ -34,7 +34,7 @@ export function enhanceHistoryView(s){
   function updateCount(count){if(originalCount)originalCount.textContent=`${count}件`}
   function renderOrder(){
     list.replaceChildren();
-    records.sort((a,b)=>String(b.date).localeCompare(String(a.date))||b.index-a.index);
+    records.sort((a,b)=>a.date.localeCompare(b.date)||a.index-b.index);
     records.forEach(x=>{x.node.hidden=false;list.appendChild(x.node)});
     updateCount(records.length);
   }
@@ -44,13 +44,13 @@ export function enhanceHistoryView(s){
     list.replaceChildren();
     const byDate=new Map();
     selected.forEach(x=>{x.node.hidden=false;if(!byDate.has(x.date))byDate.set(x.date,[]);byDate.get(x.date).push(x)});
-    [...byDate.keys()].sort().reverse().forEach(date=>{
+    [...byDate.keys()].sort().forEach(date=>{
       const heading=document.createElement('div');
       heading.className='history-date-heading';
       const d=new Date(`${date}T00:00:00`);
       heading.textContent=`${d.getMonth()+1}月${d.getDate()}日`;
       list.appendChild(heading);
-      byDate.get(date).sort((a,b)=>b.index-a.index).forEach(x=>list.appendChild(x.node));
+      byDate.get(date).sort((a,b)=>a.index-b.index).forEach(x=>list.appendChild(x.node));
     });
     updateCount(selected.length);
   }
