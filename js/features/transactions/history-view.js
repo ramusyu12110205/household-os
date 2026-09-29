@@ -20,7 +20,7 @@ export function enhanceHistoryView(s){
   toolbar.innerHTML=`<div class="history-view-mode" role="tablist" aria-label="履歴表示"><button type="button" class="secondary history-mode active" data-history-mode="order">入力順</button><button type="button" class="secondary history-mode" data-history-mode="month">月別</button></div><div class="history-month-control" hidden><label for="history-month">対象月</label><select id="history-month">${months.map(m=>`<option value="${m}"${m===defaultMonth?' selected':''}>${m.replace('-','年')}月</option>`).join('')}</select></div>`;
   titleBlock.insertAdjacentElement('afterend',toolbar);
   const style=document.createElement('style');
-  style.textContent='.history-view-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;flex-wrap:wrap}.history-view-mode{display:flex;gap:6px}.history-view-mode .active{font-weight:700;outline:2px solid rgba(124,92,255,.35)}.history-month-control{display:flex;align-items:center;gap:8px}.history-month-control label{margin:0}.history-month-control select{min-width:140px}.history-date-heading{margin:16px 0 6px;padding:6px 10px;border-left:4px solid #6d5ce7;background:rgba(109,92,231,.08);border-radius:6px;font-weight:700}.history-date-heading:first-child{margin-top:0}.history-clinger{position:absolute;width:64px;height:auto;z-index:8;pointer-events:none;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.14));animation:history-clinger-sway 2.4s ease-in-out infinite;transform-origin:50% 100%;will-change:transform}.history-clinger img{display:block;width:100%;height:auto}.history-clinger.flip{transform:scaleX(-1)}@keyframes history-clinger-sway{0%,100%{rotate:-1.5deg;translate:0 0}50%{rotate:1.5deg;translate:0 1px}}';
+  style.textContent='.history-view-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;flex-wrap:wrap}.history-view-mode{display:flex;gap:6px}.history-view-mode .active{font-weight:700;outline:2px solid rgba(124,92,255,.35)}.history-month-control{display:flex;align-items:center;gap:8px}.history-month-control label{margin:0}.history-month-control select{min-width:140px}.history-date-heading{margin:16px 0 6px;padding:6px 10px;border-left:4px solid #6d5ce7;background:rgba(109,92,231,.08);border-radius:6px;font-weight:700}.history-date-heading:first-child{margin-top:0}.history-clinger{position:absolute;width:58px;height:auto;z-index:8;pointer-events:none;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.14));animation:history-clinger-sway 2.4s ease-in-out infinite;transform-origin:50% 100%;will-change:transform}.history-clinger img{display:block;width:100%;height:auto}.history-clinger.flip{transform:scaleX(-1)}@keyframes history-clinger-sway{0%,100%{rotate:-1.5deg;translate:0 0}50%{rotate:1.5deg;translate:0 1px}}';
   document.head.appendChild(style);
   const monthControl=toolbar.querySelector('.history-month-control');
   const monthSelect=toolbar.querySelector('#history-month');
@@ -38,9 +38,11 @@ export function enhanceHistoryView(s){
 
   function getBlockedRects(target){
     const rects=[];
-    const textNodes=[...target.querySelectorAll('button,span,p,h1,h2,h3,strong,.muted,.small')];
-    textNodes.forEach(el=>{
+    [...target.querySelectorAll('*')].forEach(el=>{
       if(el.closest('.history-clinger'))return;
+      const text=(el.textContent||'').trim();
+      const tag=el.tagName;
+      if(!text&&tag!=='BUTTON')return;
       const r=el.getBoundingClientRect();
       if(r.width>0&&r.height>0)rects.push(r);
     });
@@ -54,37 +56,34 @@ export function enhanceHistoryView(s){
 
   function placeClinger(target,clinger){
     const card=target.getBoundingClientRect();
-    const w=64;
-    const h=Math.max(50,Math.round(w*0.95));
+    const w=58;
+    const h=58;
     const candidates=[
-      {name:'top-left',x:8,y:-18},
-      {name:'top-center',x:(card.width-w)/2,y:-22},
-      {name:'top-right',x:card.width-w-8,y:-18},
-      {name:'bottom-left',x:8,y:card.height-h+18},
-      {name:'bottom-center',x:(card.width-w)/2,y:card.height-h+22},
-      {name:'bottom-right',x:card.width-w-8,y:card.height-h+18},
-      {name:'left',x:-20,y:(card.height-h)/2},
-      {name:'right',x:card.width-w+20,y:(card.height-h)/2}
+      {x:10,y:-14},
+      {x:(card.width-w)/2,y:-18},
+      {x:card.width-w-10,y:-14},
+      {x:10,y:10},
+      {x:card.width-w-10,y:10},
+      {x:10,y:card.height-h-10},
+      {x:(card.width-w)/2,y:card.height-h-10},
+      {x:card.width-w-10,y:card.height-h-10},
+      {x:-12,y:(card.height-h)/2},
+      {x:card.width-w+12,y:(card.height-h)/2}
     ];
     const blocked=getBlockedRects(target);
-    const targetArea=card.width*card.height;
-    let best=null;
+    const safe=[];
     for(const c of candidates){
-      const candidateRect={left:card.left+c.x,top:card.top+c.y,right:card.left+c.x+w,bottom:card.top+c.y+h};
-      let score=0;
-      blocked.forEach(r=>{score+=rectOverlapArea(candidateRect,r)*8});
-      const insideLeft=Math.max(candidateRect.left,card.left);
-      const insideTop=Math.max(candidateRect.top,card.top);
-      const insideRight=Math.min(candidateRect.right,card.right);
-      const insideBottom=Math.min(candidateRect.bottom,card.bottom);
-      const insideArea=Math.max(0,insideRight-insideLeft)*Math.max(0,insideBottom-insideTop);
-      const outsideArea=w*h-insideArea;
-      score+=outsideArea*0.45;
-      score-=insideArea/Math.max(1,targetArea)*180;
-      if(!best||score<best.score)best={...c,score};
+      const r={left:card.left+c.x,top:card.top+c.y,right:card.left+c.x+w,bottom:card.top+c.y+h};
+      const overlapsBlocked=blocked.some(b=>rectOverlapArea(r,b)>2);
+      if(!overlapsBlocked)safe.push(c);
     }
-    clinger.style.left=`${best.x}px`;
-    clinger.style.top=`${best.y}px`;
+    if(!safe.length){
+      clinger.remove();
+      return;
+    }
+    const chosen=safe[Math.floor(Math.random()*safe.length)];
+    clinger.style.left=`${chosen.x}px`;
+    clinger.style.top=`${chosen.y}px`;
     if(Math.random()>0.5)clinger.classList.add('flip');
   }
 
@@ -101,7 +100,8 @@ export function enhanceHistoryView(s){
     img.alt='';
     clinger.appendChild(img);
     target.appendChild(clinger);
-    requestAnimationFrame(()=>placeClinger(target,clinger));
+    const place=()=>placeClinger(target,clinger);
+    if(img.complete)requestAnimationFrame(place);else img.addEventListener('load',place,{once:true});
   }
   function renderOrder(){
     list.replaceChildren();
