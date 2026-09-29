@@ -34,7 +34,7 @@ export function enhanceHistoryView(s){
   function updateCount(count){if(originalCount)originalCount.textContent=`${count}件`}
   function renderOrder(){
     list.replaceChildren();
-    records.sort((a,b)=>a.index-b.index);
+    records.sort((a,b)=>String(b.date).localeCompare(String(a.date))||b.index-a.index);
     records.forEach(x=>{x.node.hidden=false;list.appendChild(x.node)});
     updateCount(records.length);
   }
@@ -50,7 +50,7 @@ export function enhanceHistoryView(s){
       const d=new Date(`${date}T00:00:00`);
       heading.textContent=`${d.getMonth()+1}月${d.getDate()}日`;
       list.appendChild(heading);
-      byDate.get(date).forEach(x=>list.appendChild(x.node));
+      byDate.get(date).sort((a,b)=>b.index-a.index).forEach(x=>list.appendChild(x.node));
     });
     updateCount(selected.length);
   }
