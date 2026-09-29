@@ -24,7 +24,8 @@ export function enhanceHistoryView(s){
   const monthControl=toolbar.querySelector('.history-month-control');
   const monthSelect=toolbar.querySelector('#history-month');
   const modeButtons=[...toolbar.querySelectorAll('[data-history-mode]')];
-  const characterAssets={hanamaru:new URL('../../../assets/characters/Hanamaru_hook%20ver.PNG',import.meta.url).href};
+  // GitHub にアップロードした透過PNGを使用する。旧キャラ画像は参照しない。
+  const characterAssets={hanamaru:new URL('../../../assets/characters/hanamaru_transparent.png',import.meta.url).href};
   function updateCount(count){if(originalCount)originalCount.textContent=`${count}件`}
   function removeClinger(){list.querySelectorAll('.history-clinger').forEach(x=>x.remove())}
   function rectOverlapArea(a,b){const w=Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left));const h=Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));return w*h}
@@ -38,7 +39,6 @@ export function enhanceHistoryView(s){
     const card=target.getBoundingClientRect();
     const w=clinger.getBoundingClientRect().width||44;
     const h=clinger.getBoundingClientRect().height||44;
-    // この画像は「上から引っ掛かる」専用。カード下側には絶対に置かない。
     const candidates=[
       {x:8,y:-h+8,flip:false},
       {x:Math.max(8,(card.width-w)/2),y:-h+8,flip:false},
