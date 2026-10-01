@@ -71,6 +71,10 @@ export function renderHome(s){
     return `<div class="list-item" style="cursor:pointer" onclick="this.nextElementSibling.hidden=!this.nextElementSibling.hidden"><div class="between"><div><b>${index===0?'今期':index===1?'翌月':'翌々月'}の支払い予定</b><div class="muted small">${cycleLabel(cycle.start,cycle.end)}</div></div><b>${yen(total)}</b></div></div><div hidden style="padding:0 10px 8px">${detail}</div>`;
   }).join('');
   const recent=[...rows].sort((a,b)=>String(b.transaction_date).localeCompare(String(a.transaction_date))||String(b.created_at||'').localeCompare(String(a.created_at||''))).slice(0,8);
+  const chartMonths=Array.from({length:6},(_,i)=>addMonths(m,i-5));
+  const monthlyData=chartMonths.map(month=>{const r=s.transactions.filter(t=>toMonth(t.transaction_date)===month);return{label:month.slice(5)+'月',income:r.filter(t=>isIncome(t.process_type)).reduce((a,t)=>a+actualAmount(t.amount,t.points_used),0),expense:r.filter(t=>isExpense(t.process_type)).reduce((a,t)=>a+actualAmount(t.amount,t.points_used),0)}});
+  const chartMax=Math.max(1,...monthlyData.flatMap(x=>[x.income,x.expense]));
+  const monthlyBars=monthlyData.map(x=>'<div class="monthly-chart-group"><div class="monthly-chart-values"><div class="monthly-bar income" style="height:'+Math.max(4,x.income/chartMax*150)+'px" title="収入 '+yen(x.income)+'"></div><div class="monthly-bar expense" style="height:'+Math.max(4,x.expense/chartMax*150)+'px" title="支出 '+yen(x.expense)+'"></div></div><div class="monthly-chart-label">'+esc(x.label)+'</div></div>').join('');
   return layout('💰 家計簿OS','home',`
     <section class="card"><div class="between"><div><div class="muted small">対象年月</div><h2>${esc(m)}</h2></div><button class="primary" data-page="input">＋ 記録</button></div>
       <div class="stats"><div class="stat"><span class="stat-label">収入・借入</span><span class="stat-value">${yen(income)}</span></div><div class="stat"><span class="stat-label">実支出</span><span class="stat-value">${yen(expense)}</span></div><div class="stat"><span class="stat-label">資産移動・返済</span><span class="stat-value">${yen(move)}</span></div></div>
