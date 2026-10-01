@@ -19,24 +19,25 @@ export function enhanceHistoryView(s){
   toolbar.innerHTML=`<div class="history-view-mode" role="tablist" aria-label="履歴表示"><button type="button" class="secondary history-mode active" data-history-mode="order">入力順</button><button type="button" class="secondary history-mode" data-history-mode="month">月別</button></div><div class="history-month-control" hidden><label for="history-month">対象月</label><select id="history-month">${months.map(m=>`<option value="${m}"${m===defaultMonth?' selected':''}>${m.replace('-','年')}月</option>`).join('')}</select></div>`;
   titleBlock.insertAdjacentElement('afterend',toolbar);
   const style=document.createElement('style');
-  style.textContent='.history-view-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;flex-wrap:wrap}.history-view-mode{display:flex;gap:6px}.history-view-mode .active{font-weight:700;outline:2px solid rgba(124,92,255,.35)}.history-month-control{display:flex;align-items:center;gap:8px}.history-month-control label{margin:0}.history-month-control select{min-width:140px}.history-date-heading{margin:16px 0 6px;padding:6px 10px;border-left:4px solid #6d5ce7;background:rgba(109,92,231,.08);border-radius:6px;font-weight:700}.history-date-heading:first-child{margin-top:0}.history-clinger{position:absolute!important;width:100px;height:auto;z-index:8;pointer-events:none;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.14));animation:history-clinger-sway 2.8s ease-in-out infinite;transform-origin:50% 100%;will-change:transform}.history-clinger img{display:block;width:100%;height:auto}.history-clinger.flip{transform:scaleX(-1)}@keyframes history-clinger-sway{0%,100%{rotate:-1deg;translate:0 0}50%{rotate:1deg;translate:0 1px}}';
+  style.textContent='.history-view-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;flex-wrap:wrap}.history-view-mode{display:flex;gap:6px}.history-view-mode .active{font-weight:700;outline:2px solid rgba(124,92,255,.35)}.history-month-control{display:flex;align-items:center;gap:8px}.history-month-control label{margin:0}.history-month-control select{min-width:140px}.history-date-heading{margin:16px 0 6px;padding:6px 10px;border-left:4px solid #6d5ce7;background:rgba(109,92,231,.08);border-radius:6px;font-weight:700}.history-date-heading:first-child{margin-top:0}.history-clinger{position:absolute!important;width:108px;height:auto;z-index:8;pointer-events:none;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.14));animation:history-clinger-sway 2.8s ease-in-out infinite;transform-origin:50% 100%;will-change:transform}.history-clinger.hanabi{width:180px;animation:none;transform-origin:50% 0}.history-clinger img{display:block;width:100%;height:auto}.history-clinger.flip{transform:scaleX(-1)}@keyframes history-clinger-sway{0%,100%{rotate:-1deg;translate:0 0}50%{rotate:1deg;translate:0 1px}}';
   document.head.appendChild(style);
   const monthControl=toolbar.querySelector('.history-month-control');
   const monthSelect=toolbar.querySelector('#history-month');
   const modeButtons=[...toolbar.querySelectorAll('[data-history-mode]')];
-  const characterAssets={hanamaruHook:new URL('../../../assets/characters/Hanamaru_hook ver.PNG',import.meta.url).href};
+  const characterAssets={hanamaruHook:new URL('../../../assets/characters/Hanamaru_hook ver.PNG',import.meta.url).href,hanamaruHanabi:new URL('../../../assets/characters/Hanamaru_hanabi.PNG.PNG',import.meta.url).href};
   function updateCount(count){if(originalCount)originalCount.textContent=`${count}件`}
   function removeClinger(){list.querySelectorAll('.history-clinger').forEach(x=>{x._repositionCleanup?.();x.remove()})}
   function placeClinger(target,clinger,slotIndex){
     const card=target.getBoundingClientRect();
-    const w=clinger.getBoundingClientRect().width||100;
+    const isHanabi=clinger.dataset.character==='hanabi';
+    const w=clinger.getBoundingClientRect().width||(isHanabi?180:108);
     const maxX=Math.max(4,card.width-w-4);
     const candidates=[{x:4,flip:false},{x:maxX*.25,flip:false},{x:maxX*.5,flip:false},{x:maxX*.75,flip:true},{x:maxX,flip:true}];
     const chosen=candidates[Math.max(0,Math.min(slotIndex,candidates.length-1))];
     clinger.style.setProperty('left',`${chosen.x}px`,'important');
     clinger.style.setProperty('right','auto','important');
-    clinger.style.setProperty('top','auto','important');
-    clinger.style.setProperty('bottom','calc(100% - 5px)','important');
+    clinger.style.setProperty('top',isHanabi?'calc(-1 * 48px)':'auto','important');
+    clinger.style.setProperty('bottom',isHanabi?'auto':'calc(100% - 5px)','important');
     clinger.classList.toggle('flip',chosen.flip);
   }
   function addClinger(visibleRecords){
@@ -47,12 +48,15 @@ export function enhanceHistoryView(s){
     const target=pool[Math.floor(Math.random()*pool.length)]?.node;
     if(!target)return;
     const slotIndex=Math.floor(Math.random()*5);
+    const isHanabi=Math.random()<0.5;
     target.style.setProperty('position','relative','important');
     target.style.setProperty('overflow','visible','important');
     const clinger=document.createElement('div');
     clinger.className='history-clinger';
+    if(isHanabi)clinger.classList.add('hanabi');
+    clinger.dataset.character=isHanabi?'hanabi':'hook';
     const img=document.createElement('img');
-    img.src=characterAssets.hanamaruHook;
+    img.src=isHanabi?characterAssets.hanamaruHanabi:characterAssets.hanamaruHook;
     img.alt='';
     clinger.appendChild(img);
     target.appendChild(clinger);
