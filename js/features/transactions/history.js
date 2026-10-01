@@ -49,7 +49,7 @@ function targetFields(s,t,summary){
   if(p==='repayment')return `<label>返済元口座</label><select id="et-target-account">${accountList(s,t.account_id)}</select><label>返済対象負債</label><select id="et-target-liability">${liabilityList(s,t.target_account_id)}</select>`;
   return '';
 }
-function openEditModal(s,t){
+function openEditModal(s,t,render){
   document.getElementById('household-edit-modal')?.remove();
   const summary=s.summaries.find(x=>String(x.id)===String(t.summary_id));
   const source=sourceValue(t);
@@ -117,5 +117,5 @@ async function saveEdit(s,t,render){
 
 function editTx(t,render){
   const s=window.__household_state;if(!s)return alert('状態を取得できませんでした。');
-  openEditModal(s,t);
+  openEditModal(s,t,render);
 }
