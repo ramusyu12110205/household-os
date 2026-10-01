@@ -32,7 +32,9 @@ function summaryList(s,value){return `<option value="">選択してください<
 function sourceList(s,t){
   const accountId=t.account_id||t.from_account_id||null;
   const cardId=t.billing_card_id||null;
-  return `<option value="">選択してください</option><optgroup label="口座・現金・電子マネー">${optionList(s.accounts.filter(x=>x.account_type!=='liability'),accountId,x=>x.name).replace(/<option value="">選択してください<\/option>/,'')}</optgroup><optgroup label="クレジットカード">${optionList(s.cards,cardId,x=>x.name).replace(/<option value="">選択してください<\/option>/,'').replace(/value="/g,'value="card:')}</optgroup>`
+  const accounts=s.accounts.filter(x=>x.account_type!=='liability').map(x=>({...x,id:`account:${x.id}`}));
+  const cards=s.cards.map(x=>({...x,id:`card:${x.id}`}));
+  return `<option value="">選択してください</option><optgroup label="口座・現金・電子マネー">${optionList(accounts,accountId?`account:${accountId}`:null,x=>x.name)}</optgroup><optgroup label="クレジットカード">${optionList(cards,cardId?`card:${cardId}`:null,x=>x.name)}</optgroup>`
 }
 function sourceValue(s,t){
   if(t.billing_card_id)return `card:${t.billing_card_id}`;
