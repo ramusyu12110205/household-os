@@ -23,7 +23,45 @@ function sortMasterState(s){['summaries','payments','cards','accounts','categori
 async function getHouseholdOwnerId(){if(householdOwnerId)return householdOwnerId;const {data,error}=await supabase.rpc('get_household_owner_id');if(error||!data)throw(error||new Error('家計簿の初期化に失敗しました。'));householdOwnerId=data;return householdOwnerId;}
 export async function refresh(page='home'){await ensureHouseholdAuth();const id=await getHouseholdOwnerId();setState(sortMasterState(await loadHousehold(id)));window.__household_state=state;render(page)}
 export function render(page='home'){window.__household_state=state;const fn=pages[page]||pages.home;$("app").innerHTML=fn(state);bind(page)}
-function bindEnterToNextInput(){const root=document.getElementById('app');if(!root)return;root.addEventListener('keydown',e=>{if(e.key!=='Enter'||e.isComposing||!e.target.matches('input,select'))return;const target=e.target,fields=[...root.querySelectorAll('input,select')].filter(el=>!el.disabled&&el.type!=='hidden'&&el.offsetParent!==null),index=fields.indexOf(target);if(index<0)return;e.preventDefault();const next=fields[index+1];if(next){next.focus();if(next.tagName==='SELECT'&&typeof next.showPicker==='function'){try{next.showPicker()}catch(_){}}else if(next.tagName==='INPUT'&&next.type!=='date'&&next.select)next.select();return;}document.getElementById('tx-save')?.click();});}
+function bindEnterToNextInput(){
+  const root=document.getElementById('app');
+  if(!root)return;
+  root.addEventListener('keydown',e=>{
+    if(e.isComposing||!e.target.matches('input,select'))return;
+    const target=e.target;
+    const fields=[...root.querySelectorAll('input,select')]
+      .filter(el=>!el.disabled&&el.type!=='hidden'&&el.offsetParent!==null);
+    const index=fields.indexOf(target);
+    if(index<0)return;
+
+    // Enter: 次の入力項目へ
+    if(e.key==='Enter'&&!e.shiftKey){
+      e.preventDefault();
+      const next=fields[index+1];
+      if(next){
+        next.focus();
+        if(next.tagName==='SELECT'&&typeof next.showPicker==='function'){
+          try{next.showPicker()}catch(_){}
+        }else if(next.tagName==='INPUT'&&next.type!=='date'&&next.select){
+          next.select();
+        }
+        return;
+      }
+      document.getElementById('tx-save')?.click();
+      return;
+    }
+
+    // Shift+Enter: 前の入力項目へ
+    if(e.key==='Enter'&&e.shiftKey){
+      e.preventDefault();
+      const prev=fields[index-1];
+      if(prev){
+        prev.focus();
+        if(prev.tagName==='INPUT'&&prev.type!=='date'&&prev.select)prev.select();
+      }
+    }
+  });
+}
 async function lockHousehold(){clearPinSession();try{await clearHouseholdAuth()}catch(e){console.warn('家計簿セッションの終了に失敗しました。',e)}householdOwnerId=null;renderLogin()}
 function bind(page){document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>render(b.dataset.page));document.querySelector('[data-action="logout"]')?.addEventListener('click',lockHousehold);if(page==='input'){bindInput(state,()=>render('input'));bindEnterToNextInput();enhanceContentSummaryFilter(state)}if(page==='history'){bindHistory(render);enhanceHistoryView(state)}if(page==='monthly')bindMonthly(state,refresh);if(page==='assets')bindAssets(state,refresh);if(page==='settings'){bindSettings(state,refresh);enhanceCategoryOrder(state,refresh);enhanceMasterOrder(state,refresh);enhanceSummaryPaymentLinks(state,refresh);enhanceContentSummaryLinks(state,refresh)}document.dispatchEvent(new CustomEvent('household:rendered',{detail:{page}}))}
 async function boot(){await ensureHouseholdAuth();const id=await getHouseholdOwnerId();state.user={id};setState(sortMasterState(await loadHousehold(id)));window.__household_state=state;render('home')}
