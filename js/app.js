@@ -29,38 +29,31 @@ function bindEnterToNextInput(){
   root.addEventListener('keydown',e=>{
     if(e.isComposing||!e.target.matches('input,select'))return;
     const target=e.target;
-    const fields=[...root.querySelectorAll('input,select')]
-      .filter(el=>!el.disabled&&el.type!=='hidden'&&el.offsetParent!==null);
+    const fields=[...root.querySelectorAll('input,select')].filter(el=>!el.disabled&&el.type!=='hidden'&&el.offsetParent!==null);
     const index=fields.indexOf(target);
     if(index<0)return;
 
-    // Enter: 次の入力項目へ
     if(e.key==='Enter'&&!e.shiftKey){
       e.preventDefault();
       const next=fields[index+1];
       if(next){
         next.focus();
-        if(next.tagName==='SELECT'&&typeof next.showPicker==='function'){
-          try{next.showPicker()}catch(_){}
-        }else if(next.tagName==='INPUT'&&next.type!=='date'&&next.select){
-          next.select();
-        }
-        return;
-      }
-      document.getElementById('tx-save')?.click();
+        if(next.tagName==='SELECT'&&typeof next.showPicker==='function'){try{next.showPicker()}catch(_){}}
+        else if(next.tagName==='INPUT'&&next.type!=='date'&&next.select)next.select();
+      }else document.getElementById('tx-save')?.click();
       return;
     }
 
-    // Shift+Enter: 前の入力項目へ
     if(e.key==='Enter'&&e.shiftKey){
       e.preventDefault();
       const prev=fields[index-1];
       if(prev){
         prev.focus();
-        if(prev.tagName==='INPUT'&&prev.type!=='date'&&prev.select)prev.select();
+        if(prev.tagName==='SELECT'&&typeof prev.showPicker==='function'){try{prev.showPicker()}catch(_){}}
+        else if(prev.tagName==='INPUT'&&prev.type!=='date'&&prev.select)prev.select();
       }
     }
-  });
+  },true);
 }
 async function lockHousehold(){clearPinSession();try{await clearHouseholdAuth()}catch(e){console.warn('家計簿セッションの終了に失敗しました。',e)}householdOwnerId=null;renderLogin()}
 function bind(page){document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>render(b.dataset.page));document.querySelector('[data-action="logout"]')?.addEventListener('click',lockHousehold);if(page==='input'){bindInput(state,()=>render('input'));bindEnterToNextInput();enhanceContentSummaryFilter(state)}if(page==='history'){bindHistory(render);enhanceHistoryView(state)}if(page==='monthly')bindMonthly(state,refresh);if(page==='assets')bindAssets(state,refresh);if(page==='settings'){bindSettings(state,refresh);enhanceCategoryOrder(state,refresh);enhanceMasterOrder(state,refresh);enhanceSummaryPaymentLinks(state,refresh);enhanceContentSummaryLinks(state,refresh)}document.dispatchEvent(new CustomEvent('household:rendered',{detail:{page}}))}
