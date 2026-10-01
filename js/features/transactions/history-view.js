@@ -36,7 +36,7 @@ export function enhanceHistoryView(s){
     const chosen=candidates[Math.max(0,Math.min(slotIndex,candidates.length-1))];
     clinger.style.setProperty('left',`${chosen.x}px`,'important');
     clinger.style.setProperty('right','auto','important');
-    clinger.style.setProperty('top',isHanabi?'calc(-1 * 48px)':'auto','important');
+    clinger.style.setProperty('top',isHanabi?'0':'auto','important');
     clinger.style.setProperty('bottom',isHanabi?'auto':'calc(100% - 5px)','important');
     clinger.classList.toggle('flip',chosen.flip);
   }
