@@ -14,7 +14,7 @@ import { renderSettings,bindSettings } from './features/settings/settings.js?v=2
 import { enhanceCategoryOrder } from './features/settings/category-order.js?v=20260908';
 import { enhanceMasterOrder } from './features/settings/master-order.js?v=20261001b';
 import { enhanceSummaryPaymentLinks } from './features/settings/summary-payment-link.js?v=20260908';
-import { enhanceContentSummaryLinks } from './features/settings/content-summary-link.js?v=20261001c';
+import { enhanceContentSummaryLinks } from './features/settings/content-summary-link.js?v=20261001d';
 import { enhanceContentSummaryFilter } from './features/transactions/content-summary-filter.js?v=20261001c';
 
 let householdOwnerId=null;
