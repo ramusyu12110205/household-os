@@ -87,6 +87,7 @@ export function renderHome(s){
       <div class="muted small" style="margin-top:8px">資産移動・返済は家計収支には含めません</div>
     </section>
     <section class="card home-chart-card"><h3>📈 月別の収支推移</h3><p class="muted small">直近6か月の収入・支出です。</p><div class="monthly-chart"><div class="monthly-chart-bars">${monthlyBars}</div><div class="chart-legend"><span><i class="chart-dot income"></i>収入</span><span><i class="chart-dot expense"></i>支出</span></div></div></section>
+    <section class="card home-chart-card"><h3>📊 今月の支出内訳</h3><p class="muted small">カテゴリ別の実支出です。</p>${categoryData.length?'<div class="category-chart">'+categoryRows+'</div>':'<p class="muted">この月の支出記録はありません。</p>'}</section>
     <section class="card"><h3>📅 次回支払い予定</h3><p class="muted small">給料日（10日）区切りの支払い予定です。各期間をタップするとカードごとの内訳と引落日を確認できます。</p>${cycleBlocks}</section>
     <section class="card"><div class="between"><h3>現在の資産・負債</h3><button class="light" data-page="assets">詳細</button></div>
       <div class="stats"><div class="stat"><span class="stat-label">資産</span><span class="stat-value">${yen(assets)}</span></div><div class="stat"><span class="stat-label">カード負債</span><span class="stat-value">${yen(debt)}</span></div><div class="stat"><span class="stat-label">純資産</span><span class="stat-value">${yen(assets-debt)}</span></div></div>
