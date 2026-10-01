@@ -15,7 +15,7 @@ import { enhanceCategoryOrder } from './features/settings/category-order.js?v=20
 import { enhanceMasterOrder } from './features/settings/master-order.js?v=20261001b';
 import { enhanceSummaryPaymentLinks } from './features/settings/summary-payment-link.js?v=20260908';
 import { enhanceContentSummaryLinks } from './features/settings/content-summary-link.js?v=20260909';
-import { enhanceContentSummaryFilter } from './features/transactions/content-summary-filter.js?v=20261001a';
+import { enhanceContentSummaryFilter } from './features/transactions/content-summary-filter.js?v=20261001b';
 
 let householdOwnerId=null;
 const pages={home:renderHome,input:renderInput,history:renderHistory,monthly:renderMonthly,cards:renderCards,assets:renderAssets,settings:renderSettings};
