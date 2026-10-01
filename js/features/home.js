@@ -1,5 +1,5 @@
 import { layout } from '../components/layout.js';
-import { currentMonth,toMonth,yen,esc,today } from '../core/utils.js';
+import { currentMonth,toMonth,yen,esc,today,addMonths } from '../core/utils.js';
 import { isExpense,isIncome,isAssetMove,actualAmount } from '../core/transactionRules.js';
 import { calculateBalances } from '../core/balance.js';
 
