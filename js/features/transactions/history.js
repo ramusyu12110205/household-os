@@ -34,10 +34,17 @@ function sourceList(s,t){
   const cardId=t.billing_card_id||null;
   return `<option value="">選択してください</option><optgroup label="口座・現金・電子マネー">${optionList(s.accounts.filter(x=>x.account_type!=='liability'),accountId,x=>x.name).replace(/<option value="">選択してください<\/option>/,'')}</optgroup><optgroup label="クレジットカード">${optionList(s.cards,cardId,x=>x.name).replace(/<option value="">選択してください<\/option>/,'').replace(/value="/g,'value="card:')}</optgroup>`
 }
-function sourceValue(t){
+function sourceValue(s,t){
   if(t.billing_card_id)return `card:${t.billing_card_id}`;
   if(t.account_id)return `account:${t.account_id}`;
   if(t.from_account_id)return `account:${t.from_account_id}`;
+  const name=String(t.payment_method_name||'').trim();
+  if(name){
+    const account=s.accounts.find(x=>String(x.name||'').trim()===name);
+    if(account)return `account:${account.id}`;
+    const card=s.cards.find(x=>String(x.name||'').trim()===name);
+    if(card)return `card:${card.id}`;
+  }
   return '';
 }
 function targetFields(s,t,summary){
@@ -52,7 +59,7 @@ function targetFields(s,t,summary){
 function openEditModal(s,t,render){
   document.getElementById('household-edit-modal')?.remove();
   const summary=s.summaries.find(x=>String(x.id)===String(t.summary_id));
-  const source=sourceValue(t);
+  const source=sourceValue(s,t);
   const modal=document.createElement('div');
   modal.id='household-edit-modal';
   modal.innerHTML=`<div class="household-edit-backdrop"><div class="household-edit-card"><div class="between"><h2 style="margin:0">✏️ 履歴を編集</h2><button type="button" class="light" id="et-close">閉じる</button></div><div class="grid" style="margin-top:14px"><div><label>取引日</label><input id="et-date" type="date" value="${esc(t.transaction_date||'')}"><label>内容</label><input id="et-desc" value="${esc(t.description||'')}"><label>摘要</label><select id="et-summary">${summaryList(s,t.summary_id)}</select><label id="et-source-label">支払元</label><select id="et-source">${sourceList(s,t)}</select><div id="et-targets">${targetFields(s,t,summary)}</div></div><div><label>金額</label><input id="et-amount" type="number" min="1" value="${Number(t.amount||0)}"><label>ポイント利用</label><input id="et-points" type="number" min="0" value="${Number(t.points_used||0)}"><label>補足</label><input id="et-target" value="${esc(t.target_input||'')}"><label>メモ</label><input id="et-memo" value="${esc(t.memo||'')}"></div></div><div id="et-preview" class="stat" style="margin-top:12px"></div><div class="row" style="margin-top:12px"><button class="primary" id="et-save" style="flex:1">この内容で保存</button><button class="danger" id="et-cancel">キャンセル</button></div></div></div>`;
