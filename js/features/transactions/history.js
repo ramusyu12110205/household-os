@@ -16,7 +16,11 @@ export function bindHistory(render){
     if(state?.transactions)state.transactions=state.transactions.filter(t=>String(t.id)!==String(b.dataset.deleteTx));
     render('history');
   });
-  document.querySelectorAll('[data-edit-tx]').forEach(b=>b.onclick=()=>editTx(safeTx(b.dataset.editTx),render));
+  document.querySelectorAll('[data-edit-tx]').forEach(b=>b.onclick=()=>{
+    const t=safeTx(b.dataset.editTx);
+    if(!t)return alert('編集対象の記録を取得できませんでした。画面を再読み込みしてください。');
+    editTx(t,render);
+  });
 }
 function safeTx(id){return window.__household_state?.transactions?.find(t=>String(t.id)===String(id))}
 
@@ -58,7 +62,20 @@ function openEditModal(s,t){
   const refresh=()=>{const q=s.summaries.find(x=>String(x.id)===String(document.getElementById('et-summary')?.value));document.getElementById('et-targets').innerHTML=targetFields(s,t,q);previewEdit(s,t)};
   document.getElementById('et-summary').onchange=()=>{const q=s.summaries.find(x=>String(x.id)===String(document.getElementById('et-summary').value));document.getElementById('et-targets').innerHTML=targetFields(s,t,q);previewEdit(s,t)};
   ['et-date','et-amount','et-points','et-source'].forEach(id=>document.getElementById(id)?.addEventListener(id==='et-source'?'change':'input',()=>previewEdit(s,t)));
-  document.getElementById('et-close').onclick=()=>modal.remove();document.getElementById('et-cancel').onclick=()=>modal.remove();document.getElementById('et-save').onclick=()=>saveEdit(s,t,render);
+  document.getElementById('et-close').onclick=()=>modal.remove();
+  document.getElementById('et-cancel').onclick=()=>modal.remove();
+  document.getElementById('et-save').onclick=async()=>{
+    const button=document.getElementById('et-save');
+    if(!button)return;
+    button.disabled=true;
+    button.textContent='保存中…';
+    try{await saveEdit(s,t,render)}catch(e){
+      console.error('履歴編集の保存に失敗しました。',e);
+      alert('保存に失敗しました。\n'+(e?.message||e));
+      button.disabled=false;
+      button.textContent='この内容で保存';
+    }
+  };
   previewEdit(s,t);
 }
 function previewEdit(s,t){
@@ -88,8 +105,14 @@ async function saveEdit(s,t,render){
   else if(p==='repayment'){update.account_id=targetAccountId;update.target_account_id=targetLiabilityId;update.target_card_id=null;update.billing_card_id=null;update.billing_card_name=null;update.payment_method_id=null;update.payment_method_name=s.accounts.find(x=>String(x.id)===String(targetAccountId))?.name||null}
   else {const account=accountId?s.accounts.find(x=>String(x.id)===String(accountId)):null,card=cardId?s.cards.find(x=>String(x.id)===String(cardId)):null;update.account_id=accountId;update.billing_card_id=cardId;update.billing_card_name=card?.name||null;update.payment_method_id=card?s.payments.find(v=>String(v.linked_card_id)===String(cardId)&&v.method_type==='card')?.id||null:s.payments.find(v=>v.name===account?.name)?.id||null;update.payment_method_name=card?.name||account?.name||null;}
   const billingCard=update.billing_card_id?s.cards.find(x=>String(x.id)===String(update.billing_card_id)):null;update.billing_year_month=billingMonth(date,billingCard);
-  const{error}=await supabase.from('household_transactions').update(update).eq('id',t.id);if(error)return alert('更新失敗：'+error.message);
-  Object.assign(t,update);document.getElementById('household-edit-modal')?.remove();render('history');
+  let query=supabase.from('household_transactions').update(update).eq('id',t.id);
+  if(s.user?.id)query=query.eq('user_id',s.user.id);
+  const{data,error}=await query.select('id').maybeSingle();
+  if(error)return alert('更新失敗：'+error.message);
+  if(!data)return alert('更新対象が見つからないか、更新権限がありません。');
+  Object.assign(t,update);
+  document.getElementById('household-edit-modal')?.remove();
+  await render('history');
 }
 
 function editTx(t,render){
