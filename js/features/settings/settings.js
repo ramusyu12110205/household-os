@@ -31,8 +31,9 @@ export function renderSettings(s){
   const categoryForm=`<section><h3>カテゴリ</h3><input type="hidden" id="category-id"><label>名称</label><input id="category-name" placeholder="食費"><button class="primary" id="category-save">保存</button><button class="light" type="button" id="category-cancel" style="display:none;margin-left:8px">編集をキャンセル</button></section>`;
   const budgetForm=`<section><h3>予算</h3><label>対象年月</label><input id="budget-month" type="month" value="${today().slice(0,7)}"><label>カテゴリ</label><input id="budget-category" placeholder="食費"><label>予算額</label><input id="budget-amount" type="number" min="0" value="0"><button class="primary" id="budget-save">保存</button></section>`;
   const editButton=(kind,id)=>`<button class="light" type="button" data-settings-edit="${kind}" data-id="${id}">編集</button>`;
+  const deleteButton=(kind,id)=>`<button class="danger" type="button" data-settings-delete="${kind}" data-id="${id}">削除</button>`;
   const summaryItems=s.summaries.map(x=>`<div class="list-item"><b>摘要</b> ${esc(x.name)} <span class="muted small">${esc(x.category_name||'')} / ${esc(({normal:'通常支出',income:'収入',borrowing:'借入',repayment:'返済',transfer:'振替',charge:'チャージ',card_payment:'カード引落'})[x.process_type]||x.process_type||'')}</span>${x.process_type==='borrowing'?`<div class="muted small">入金先：${esc(s.accounts.find(a=>String(a.id)===String(x.withdrawal_account_id))?.name||'未設定')} → 借入先負債：${esc(s.accounts.find(a=>String(a.id)===String(x.withdrawal_card_id))?.name||'未設定')}</div>`:''}${x.process_type==='charge'?`<div class="muted small">チャージ元：${esc(s.cards.find(c=>String(c.id)===String(x.charge_source_card_id))?.name||'未設定')} → チャージ先：${esc(s.accounts.find(a=>String(a.id)===String(x.charge_target_account_id))?.name||'未設定')}</div>`:''}${x.process_type==='card_payment'?`<div class="muted small">引落元：${esc(s.accounts.find(a=>String(a.id)===String(x.withdrawal_account_id))?.name||'未設定')} → 対象カード：${esc(s.cards.find(c=>String(c.id)===String(x.withdrawal_card_id))?.name||'未設定')}</div>`:''}${x.process_type==='repayment'?`<div class="muted small">返済元：${esc(s.accounts.find(a=>String(a.id)===String(x.withdrawal_account_id))?.name||'未設定')} → 返済対象負債：${esc(s.accounts.find(a=>String(a.id)===String(x.withdrawal_card_id))?.name||'未設定')}</div>`:''}${editButton('summary',x.id)}</div>`).join('');
-  const paymentItems=s.payments.map(x=>`<div class="list-item"><b>決済</b> ${esc(x.name)} <span class="muted small">${({cash:'現金',bank:'銀行',wallet:'電子マネー',transit:'交通系',card:'クレジットカード',other:'その他'})[x.method_type]||x.method_type||''}</span> ${editButton('payment',x.id)}</div>`).join('');
+  const paymentItems=s.payments.map(x=>`<div class="list-item"><b>決済</b> ${esc(x.name)} <span class="muted small">${({cash:'現金',bank:'銀行',wallet:'電子マネー',transit:'交通系',card:'クレジットカード',other:'その他'})[x.method_type]||x.method_type||''}</span> ${editButton('payment',x.id)} ${deleteButton('payment',x.id)}</div>`).join('');
   const cardItems=s.cards.map(x=>`<div class="list-item"><b>カード</b> ${esc(x.name)} <span class="muted small">締め${x.close_day}日・引落${x.withdrawal_day}日 / 開始負債 ${Number(x.initial_balance||0).toLocaleString('ja-JP')}円</span> ${editButton('card',x.id)}</div>`).join('');
   const accountItems=s.accounts.map(x=>`<div class="list-item"><b>${x.account_type==='liability'?'負債':'口座'}</b> ${esc(x.name)} <span class="muted small">${accountTypeLabel(x.account_type)} / 残高 ${Number(x.actual_balance??x.initial_balance??0).toLocaleString('ja-JP')}円</span> ${editButton('account',x.id)}</div>`).join('');
   const categoryItems=s.categories.map(x=>`<div class="list-item"><b>カテゴリ</b> ${esc(x.name)} ${editButton('category',x.id)}</div>`).join('');
@@ -52,6 +53,22 @@ export function bindSettings(s,refresh){
   const editCategory=(x)=>{ $('category-id').value=x.id||''; $('category-name').value=x.name||''; $('category-cancel').style.display='inline-block'; $('category-save').textContent='更新'; };
 
   document.querySelectorAll('[data-settings-edit]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const kind=btn.dataset.settingsEdit,id=btn.dataset.id,x=findById(kind,id);if(!x)return;if(kind==='summary')editSummary(x);if(kind==='payment')editPayment(x);if(kind==='card')editCard(x);if(kind==='account')editAccount(x);if(kind==='category')editCategory(x);}));
+  document.querySelectorAll('[data-settings-delete]').forEach(btn=>btn.addEventListener('click',async e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    const kind=btn.dataset.settingsDelete;
+    const id=btn.dataset.id;
+    const x=findById(kind,id);
+    if(!x||kind!=='payment')return;
+    if(!confirm(`「${x.name}」を削除しますか？`))return;
+    const {error}=await supabase.from('household_payment_methods').delete().eq('id',id).eq('user_id',s.user.id);
+    if(error){
+      console.error(error);
+      alert('削除できませんでした。過去の取引などで使用されている決済方法は削除できない場合があります。\\n\\n'+error.message);
+      return;
+    }
+    await refresh('settings');
+  }));
   $('summary-process')?.addEventListener('change',renderRoute);
   $('summary-save')?.addEventListener('click',async()=>{
     const name=$('summary-name').value.trim();if(!name)return alert('摘要名を入力してください');
