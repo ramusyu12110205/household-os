@@ -19,7 +19,7 @@ export async function enhanceContentSummaryFilter(s){
   };
   const apply=()=>{
     const value=input.value.trim();
-    const rule=contentRules.find(r=>String(r.name||'').trim()===value);
+    const rule=contentRules.filter(r=>{const name=String(r.name||'').trim();return name&&value.includes(name)}).sort((a,b)=>String(b.name||'').trim().length-String(a.name||'').trim().length)[0];
     if(!rule){
       restoreSummaries();
       const source=document.getElementById('tx-source');
