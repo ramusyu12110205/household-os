@@ -5,7 +5,7 @@ export async function enhanceContentSummaryFilter(s){
   const summary=document.getElementById('tx-summary');
   if(!input||!summary||!s?.user?.id)return;
   const {data:rules,error}=await supabase.from('household_content_rules')
-    .select('name,summary_ids,source_type,source_id')
+    .select('name,summary_ids,source_type,source_id,source_values')
     .eq('user_id',s.user.id).eq('archived',false);
   if(error)return;
   const contentRules=Array.isArray(rules)?rules:[];
@@ -36,13 +36,25 @@ export async function enhanceContentSummaryFilter(s){
     else if(options.some(o=>String(o.value)===String(current)))summary.value=current;
     else summary.value='';
     summary.dispatchEvent(new Event('change',{bubbles:true}));
+
     setTimeout(()=>{
       const source=document.getElementById('tx-source');
-      if(!source||!rule.source_type||!rule.source_id)return;
-      const sourceValue=rule.source_type+':'+rule.source_id;
-      if([...source.options].some(o=>String(o.value)===sourceValue)){
-        source.value=sourceValue;
-        lastAutoSource=sourceValue;
+      if(!source)return;
+      let sourceValues=Array.isArray(rule.source_values)?rule.source_values.filter(Boolean).map(String):[];
+      if(!sourceValues.length&&rule.source_type&&rule.source_id)sourceValues=[rule.source_type+':'+rule.source_id];
+      if(!sourceValues.length)return;
+
+      [...source.options].forEach(option=>{
+        if(option.value && !sourceValues.includes(String(option.value)))option.remove();
+      });
+
+      if(sourceValues.length===1 && [...source.options].some(o=>String(o.value)===sourceValues[0])){
+        source.value=sourceValues[0];
+        lastAutoSource=sourceValues[0];
+        source.dispatchEvent(new Event('change',{bubbles:true}));
+      }else{
+        source.value='';
+        lastAutoSource='';
         source.dispatchEvent(new Event('change',{bubbles:true}));
       }
     },0);
