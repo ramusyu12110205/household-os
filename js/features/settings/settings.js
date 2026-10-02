@@ -36,7 +36,7 @@ export function renderSettings(s){
   const paymentItems=s.payments.map(x=>`<div class="list-item"><b>決済</b> ${esc(x.name)} <span class="muted small">${({cash:'現金',bank:'銀行',wallet:'電子マネー',transit:'交通系',card:'クレジットカード',other:'その他'})[x.method_type]||x.method_type||''}</span> ${editButton('payment',x.id)} ${deleteButton('payment',x.id)}</div>`).join('');
   const cardItems=s.cards.map(x=>`<div class="list-item"><b>カード</b> ${esc(x.name)} <span class="muted small">締め${x.close_day}日・引落${x.withdrawal_day}日 / 開始負債 ${Number(x.initial_balance||0).toLocaleString('ja-JP')}円</span> ${editButton('card',x.id)}</div>`).join('');
   const accountItems=s.accounts.map(x=>`<div class="list-item"><b>${x.account_type==='liability'?'負債':'口座'}</b> ${esc(x.name)} <span class="muted small">${accountTypeLabel(x.account_type)} / 残高 ${Number(x.actual_balance??x.initial_balance??0).toLocaleString('ja-JP')}円</span> ${editButton('account',x.id)}</div>`).join('');
-  const categoryItems=s.categories.map(x=>`<div class="list-item"><b>カテゴリ</b> ${esc(x.name)} ${editButton('category',x.id)}</div>`).join('');
+  const categoryItems=s.categories.map(x=>`<div class="list-item"><b>カテゴリ</b> ${esc(x.name)} ${editButton('category',x.id)} ${deleteButton('category',x.id)}</div>`).join('');
   const registeredGroup=(label,items)=>`<details class="registered-group"><summary>${label}<span class="registered-count">${items.length}件</span></summary><div class="registered-group-body">${items.length?`<div class="list">${items}</div>`:'<p class="muted small">まだ登録がありません。</p>'}</div></details>`;
   const registered=`${registeredGroup('摘要',s.summaries)}${registeredGroup('決済方法',s.payments)}${registeredGroup('カード',s.cards)}${registeredGroup('口座・現金・負債',s.accounts)}${registeredGroup('カテゴリ',s.categories)}`;
   return layout('💰 家計簿OS','settings',`<section class="card"><h2>⚙ 家計設定</h2><p class="muted">摘要・決済方法・カード・口座・負債・カテゴリ・予算を登録・編集できます。</p><div class="grid">${summaryForm}${paymentForm}${cardForm}${accountForm}${categoryForm}${budgetForm}</div></section><section class="card"><h3>登録済み</h3><div class="registered-groups">${registered}</div></section>`);
@@ -59,7 +59,15 @@ export function bindSettings(s,refresh){
     const kind=btn.dataset.settingsDelete;
     const id=btn.dataset.id;
     const x=findById(kind,id);
-    if(!x||kind!=='payment')return;
+    if(!x)return;
+    if(kind==='category'){
+      if(!confirm(`「${x.name}」を削除しますか？\\n\\n過去の取引履歴のカテゴリ名は残ります。`))return;
+      const {error}=await supabase.from('household_categories').update({archived:true}).eq('id',id).eq('user_id',s.user.id);
+      if(error)return alert(error.message);
+      await refresh('settings');
+      return;
+    }
+    if(kind!=='payment')return;
     if(!confirm(`「${x.name}」を削除しますか？`))return;
     const {error}=await supabase.from('household_payment_methods').delete().eq('id',id).eq('user_id',s.user.id);
     if(error){
@@ -87,7 +95,21 @@ export function bindSettings(s,refresh){
   $('card-cancel')?.addEventListener('click',()=>{clear('card');$('card-save').textContent='保存';});
   $('account-save')?.addEventListener('click',async()=>{const name=$('account-name').value.trim();if(!name)return alert('名称を入力してください');const id=$('account-id').value||null;const balance=Number($('account-balance').value||0);if(balance<0)return alert('開始残高は0以上で入力してください');const payload={user_id:s.user.id,name,account_type:$('account-type').value,initial_balance:balance,actual_balance:balance,opening_date:today(),archived:false};const q=id?supabase.from('household_accounts').update(payload).eq('id',id).eq('user_id',s.user.id):supabase.from('household_accounts').upsert(payload,{onConflict:'user_id,name'});const{error}=await q;if(error)return alert(error.message);await refresh('settings')});
   $('account-cancel')?.addEventListener('click',()=>{clear('account');$('account-save').textContent='保存';});
-  $('category-save')?.addEventListener('click',async()=>{const name=$('category-name').value.trim();if(!name)return alert('カテゴリ名を入力してください');const id=$('category-id').value||null;const payload={user_id:s.user.id,name,kind:'expense',sort_order:s.categories.length,archived:false};const q=id?supabase.from('household_categories').update(payload).eq('id',id).eq('user_id',s.user.id):supabase.from('household_categories').upsert(payload,{onConflict:'user_id,name'});const{error}=await q;if(error)return alert(error.message);await refresh('settings')});
+  $('category-save')?.addEventListener('click',async()=>{
+    const name=$('category-name').value.trim();if(!name)return alert('カテゴリ名を入力してください');
+    const id=$('category-id').value||null;const old=s.categories.find(x=>String(x.id)===String(id));
+    const payload={user_id:s.user.id,name,kind:'expense',sort_order:old?.sort_order??s.categories.length,archived:false};
+    if(!id){const{error}=await supabase.from('household_categories').upsert(payload,{onConflict:'user_id,name'});if(error)return alert(error.message);return await refresh('settings')}
+    if(old?.name===name)return await refresh('settings');
+    const{error}=await supabase.from('household_categories').update(payload).eq('id',id).eq('user_id',s.user.id);if(error)return alert(error.message);
+    const tx=await supabase.from('household_transactions').update({category_name:name}).eq('category_name',old?.name||'').eq('user_id',s.user.id);
+    if(tx.error){await supabase.from('household_categories').update({name:old.name}).eq('id',id).eq('user_id',s.user.id);return alert('カテゴリ名の変更に失敗しました。\\n\\n'+tx.error.message)}
+    const sm=await supabase.from('household_summaries').update({category_name:name}).eq('category_name',old?.name||'').eq('user_id',s.user.id);
+    if(sm.error){await supabase.from('household_transactions').update({category_name:old.name}).eq('category_name',name).eq('user_id',s.user.id);await supabase.from('household_categories').update({name:old.name}).eq('id',id).eq('user_id',s.user.id);return alert('カテゴリ名の変更に失敗しました。\\n\\n'+sm.error.message)}
+    const bd=await supabase.from('household_budgets').update({category_name:name}).eq('category_name',old?.name||'').eq('user_id',s.user.id);
+    if(bd.error){await supabase.from('household_summaries').update({category_name:old.name}).eq('category_name',name).eq('user_id',s.user.id);await supabase.from('household_transactions').update({category_name:old.name}).eq('category_name',name).eq('user_id',s.user.id);await supabase.from('household_categories').update({name:old.name}).eq('id',id).eq('user_id',s.user.id);return alert('カテゴリ名の変更に失敗しました。\\n\\n'+bd.error.message)}
+    await refresh('settings');
+  });
   $('category-cancel')?.addEventListener('click',()=>{clear('category');$('category-save').textContent='保存';});
   $('budget-save')?.addEventListener('click',async()=>{const month=$('budget-month').value,category=$('budget-category').value.trim(),amount=Number($('budget-amount').value||0);if(!month||!category||amount<0)return alert('年月・カテゴリ・予算額を確認してください');const{error}=await supabase.from('household_budgets').upsert({user_id:s.user.id,year_month:month+'-01',category_name:category,amount},{onConflict:'user_id,year_month,category_name'});if(error)return alert(error.message);await refresh('settings')});
   renderRoute();
