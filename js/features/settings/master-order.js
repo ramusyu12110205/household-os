@@ -42,6 +42,7 @@ export function enhanceMasterOrder(s, refresh) {
             <button type="button" class="light" data-master-move="up" ${index === 0 ? 'disabled' : ''}>↑</button>
             <button type="button" class="light" data-master-move="down" ${index === items.length - 1 ? 'disabled' : ''}>↓</button>
             ${type.key==='payment'?'<button type="button" class="danger" data-master-delete="payment">削除</button>':''}
+            ${type.key==='summary'?'<button type="button" class="light" data-master-edit="summary">編集</button>':''}
           </div>
         </div>`).join('') : '<p class="muted small">まだ登録がありません。</p>'}</div></details>`;
     }).join('');
@@ -87,6 +88,18 @@ export function enhanceMasterOrder(s, refresh) {
     render();
     await saveOrder(type);
   };
+
+  groups.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-master-edit="summary"]');
+    if (!button || busy) return;
+    const row = button.closest('[data-master-id]');
+    const edit = document.querySelector('[data-settings-edit="summary"][data-id="' + row?.dataset.masterId + '"]');
+    if (edit) {
+      edit.click();
+      document.getElementById('summary-name')?.scrollIntoView({behavior:'smooth',block:'center'});
+      document.getElementById('summary-name')?.focus();
+    }
+  });
 
   groups.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-master-move]');
