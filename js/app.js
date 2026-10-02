@@ -12,7 +12,7 @@ import { renderCards } from './features/credit/cards.js';
 import { renderAssets,bindAssets } from './features/assets/assets-v2.js?v=20260909';
 import { renderSettings,bindSettings } from './features/settings/settings.js?v=20261002c';
 import { enhanceCategoryOrder } from './features/settings/category-order.js?v=20260908';
-import { enhanceMasterOrder } from './features/settings/master-order.js?v=20261002b';
+import { enhanceMasterOrder } from './features/settings/master-order.js?v=20261002c';
 import { enhanceSummaryPaymentLinks } from './features/settings/summary-payment-link.js?v=20260908';
 import { enhanceContentSummaryLinks } from './features/settings/content-summary-link.js?v=20261002a';
 import { enhanceContentSummaryFilter } from './features/transactions/content-summary-filter.js?v=20261002b';
