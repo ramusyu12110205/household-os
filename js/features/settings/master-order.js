@@ -89,15 +89,47 @@ export function enhanceMasterOrder(s, refresh) {
     await saveOrder(type);
   };
 
-  groups.addEventListener('click', (event) => {
+  groups.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-master-edit="summary"]');
     if (!button || busy) return;
     const row = button.closest('[data-master-id]');
-    const edit = document.querySelector('[data-settings-edit="summary"][data-id="' + row?.dataset.masterId + '"]');
-    if (edit) {
-      edit.click();
-      document.getElementById('summary-name')?.scrollIntoView({behavior:'smooth',block:'center'});
-      document.getElementById('summary-name')?.focus();
+    const id = row?.dataset.masterId;
+    const item = lists.summary.find((x) => String(x.id) === String(id));
+    if (!item) return;
+    const name = prompt('摘要の名称を変更', item.name || '');
+    if (name === null) return;
+    const nextName = name.trim();
+    if (!nextName || nextName === item.name) return;
+    if (lists.summary.some((x) => String(x.id) !== String(id) && String(x.name).trim() === nextName)) {
+      alert('同じ名前の摘要がすでにあります。');
+      return;
+    }
+    busy = true;
+    button.disabled = true;
+    try {
+      const { error } = await supabase.from('household_summaries')
+        .update({ name: nextName })
+        .eq('id', id)
+        .eq('user_id', s.user.id);
+      if (error) throw error;
+      const { error: txError } = await supabase.from('household_transactions')
+        .update({ summary_name: nextName })
+        .eq('summary_id', id)
+        .eq('user_id', s.user.id);
+      if (txError) {
+        await supabase.from('household_summaries').update({ name: item.name }).eq('id', id).eq('user_id', s.user.id);
+        throw new Error('過去の取引履歴への反映に失敗しました。摘要名は元に戻しました。\\n\\n' + txError.message);
+      }
+      item.name = nextName;
+      const stateItem = (s.summaries || []).find((x) => String(x.id) === String(id));
+      if (stateItem) stateItem.name = nextName;
+      await refresh('settings');
+    } catch (error) {
+      console.error(error);
+      alert('摘要名を変更できませんでした。\\n\\n' + error.message);
+      render();
+    } finally {
+      busy = false;
     }
   });
 
