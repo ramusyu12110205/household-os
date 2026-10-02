@@ -10,7 +10,7 @@ import { enhanceHistoryView } from './features/transactions/history-view.js?v=20
 import { renderMonthly,bindMonthly } from './features/budgets/monthly.js';
 import { renderCards } from './features/credit/cards.js';
 import { renderAssets,bindAssets } from './features/assets/assets-v2.js?v=20260909';
-import { renderSettings,bindSettings } from './features/settings/settings.js?v=20261001b';
+import { renderSettings,bindSettings } from './features/settings/settings.js?v=20261002c';
 import { enhanceCategoryOrder } from './features/settings/category-order.js?v=20260908';
 import { enhanceMasterOrder } from './features/settings/master-order.js?v=20261002b';
 import { enhanceSummaryPaymentLinks } from './features/settings/summary-payment-link.js?v=20260908';
