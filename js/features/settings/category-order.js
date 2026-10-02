@@ -29,6 +29,8 @@ export function enhanceCategoryOrder(s, refresh) {
         <div class="category-order-actions">
           <button type="button" class="light" data-move="up" ${index === 0 ? 'disabled' : ''}>↑</button>
           <button type="button" class="light" data-move="down" ${index === categories.length - 1 ? 'disabled' : ''}>↓</button>
+          <button type="button" class="light" data-category-edit="1">編集</button>
+          <button type="button" class="danger" data-category-delete="1">削除</button>
         </div>
       </div>`).join('')}</div></details>`;
   };
@@ -58,6 +60,22 @@ export function enhanceCategoryOrder(s, refresh) {
   };
 
   list.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-category-edit]');
+    if (!button || busy) return;
+    const row=button.closest('[data-category-id]');const id=row?.dataset.categoryId;const cat=categories.find(x=>String(x.id)===String(id));if(!cat)return;
+    const name=prompt('カテゴリの名称を変更',cat.name||'');if(name===null)return;const next=name.trim();if(!next||next===cat.name)return;
+    if(categories.some(x=>String(x.id)!==String(id)&&String(x.name).trim()===next))return alert('同じ名前のカテゴリがすでにあります。');
+    busy=true;
+    try{
+      const{error}=await supabase.from('household_categories').update({name:next}).eq('id',id).eq('user_id',s.user.id);if(error)throw error;
+      const tx=await supabase.from('household_transactions').update({category_name:next}).eq('category_name',cat.name).eq('user_id',s.user.id);if(tx.error)throw tx.error;
+      const sm=await supabase.from('household_summaries').update({category_name:next}).eq('category_name',cat.name).eq('user_id',s.user.id);if(sm.error)throw sm.error;
+      const bd=await supabase.from('household_budgets').update({category_name:next}).eq('category_name',cat.name).eq('user_id',s.user.id);if(bd.error)throw bd.error;
+      await refresh('settings');
+    }catch(e){console.error(e);alert('カテゴリ名を変更できませんでした。\\n\\n'+e.message)}finally{busy=false}
+  });
+
+  list.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-move]');
     if (!button || button.disabled) return;
     const row = button.closest('[data-category-id]');
@@ -68,6 +86,14 @@ export function enhanceCategoryOrder(s, refresh) {
     [categories[index], categories[next]] = [categories[next], categories[index]];
     render();
     await saveOrder();
+  });
+
+  list.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-category-delete]');
+    if (!button || busy) return;
+    const row=button.closest('[data-category-id]');const id=row?.dataset.categoryId;const cat=categories.find(x=>String(x.id)===String(id));if(!cat)return;
+    if(!confirm('「'+cat.name+'」を削除しますか？\\n\\n過去の取引履歴のカテゴリ名は残ります。'))return;
+    busy=true;try{const{error}=await supabase.from('household_categories').update({archived:true}).eq('id',id).eq('user_id',s.user.id);if(error)throw error;await refresh('settings')}catch(e){console.error(e);alert('カテゴリを削除できませんでした。\\n\\n'+e.message)}finally{busy=false}
   });
 
   if (!document.getElementById('category-order-style')) {
