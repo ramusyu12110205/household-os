@@ -41,6 +41,7 @@ export function enhanceMasterOrder(s, refresh) {
           <div class="master-order-actions">
             <button type="button" class="light" data-master-move="up" ${index === 0 ? 'disabled' : ''}>↑</button>
             <button type="button" class="light" data-master-move="down" ${index === items.length - 1 ? 'disabled' : ''}>↓</button>
+            ${type.key==='payment'?'<button type="button" class="danger" data-master-delete="payment">削除</button>':''}
           </div>
         </div>`).join('') : '<p class="muted small">まだ登録がありません。</p>'}</div></details>`;
     }).join('');
@@ -99,6 +100,29 @@ export function enhanceMasterOrder(s, refresh) {
     const next = button.dataset.masterMove === 'up' ? index - 1 : index + 1;
     if (next < 0 || next >= items.length) return;
     await moveItem(type, index, next);
+  });
+
+  groups.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-master-delete="payment"]');
+    if (!button || busy) return;
+    const row = button.closest('[data-master-id]');
+    const id = row?.dataset.masterId;
+    const item = lists.payment.find((x) => String(x.id) === String(id));
+    if (!item) return;
+    if (!confirm('「' + item.name + '」を削除しますか？')) return;
+    busy = true;
+    button.disabled = true;
+    try {
+      const { error } = await supabase.from('household_payment_methods').delete().eq('id', id).eq('user_id', s.user.id);
+      if (error) throw error;
+      await refresh('settings');
+    } catch (error) {
+      console.error(error);
+      alert('削除できませんでした。過去の取引などで使用されている決済方法は削除できない場合があります。\\n\\n' + error.message);
+      render();
+    } finally {
+      busy = false;
+    }
   });
 
   groups.addEventListener('change', async (event) => {
