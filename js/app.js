@@ -3,7 +3,7 @@ import { loadHousehold } from './core/data-fresh.js';
 import { $ } from './core/utils.js';
 import { renderLogin,clearPinSession,isPinUnlocked } from './features/auth.js?v=20260928c';
 import { supabase,ensureHouseholdAuth,clearHouseholdAuth } from './core/supabase.js?v=20260928c';
-import { renderHome } from './features/home.js?v=20260907b';
+import { renderHome } from './features/home.js?v=20261002a';
 import { renderInput,bindInput } from './features/transactions/input.js?v=20261001h';
 import { renderHistory,bindHistory } from './features/transactions/history.js?v=20261001c';
 import { enhanceHistoryView } from './features/transactions/history-view.js?v=20260929e';
